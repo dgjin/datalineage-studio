@@ -32,6 +32,7 @@ public class ChangeService {
     private final AssetMapper assetMapper;
     private final ImpactAnalysisService impactAnalysisService;
     private final NotificationService notificationService;
+    private final ApprovalService approvalService;
 
     public List<ChangeEventEntity> listChanges(String status, Boolean isManaged, Boolean isBreaking) {
         QueryWrapper<ChangeEventEntity> wrapper = new QueryWrapper<>();
@@ -100,6 +101,10 @@ public class ChangeService {
         change.setAffectedTables((Integer) impact.getOrDefault("affectedTables", 0));
         change.setStatus("ANALYZED");
         changeEventMapper.updateById(change);
+
+        // Publish gate: BLOCKER/HIGH managed changes are routed to approval
+        // before they can be considered released.
+        approvalService.autoTriggerIfHighRisk(changeEventMapper.selectById(change.getId()));
 
         // Notify for breaking or unmanaged changes
         if (Boolean.TRUE.equals(change.getIsBreaking()) || Boolean.FALSE.equals(change.getIsManaged())) {

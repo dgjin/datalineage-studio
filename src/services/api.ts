@@ -315,6 +315,109 @@ export const impactApi = {
     }),
 };
 
+// Governance Dashboard API
+export const dashboardApi = {
+  overview: () => apiFetch<any>('/dashboard/overview'),
+
+  assetHealth: () => apiFetch<any[]>('/dashboard/asset-health'),
+
+  getAssetHealth: (assetId: string) => apiFetch<any>(`/dashboard/asset-health/${assetId}`),
+};
+
+// Data Standards API
+export const standardApi = {
+  list: (params?: { type?: string; status?: string; domain?: string }) => {
+    const query = new URLSearchParams(params as any).toString();
+    return apiFetch<any[]>(`/standards${query ? `?${query}` : ''}`);
+  },
+
+  get: (id: string) => apiFetch<any>(`/standards/${id}`),
+
+  create: (std: any) => apiFetch<any>('/standards', {
+    method: 'POST',
+    body: JSON.stringify(std),
+  }),
+
+  update: (id: string, std: any) => apiFetch<any>(`/standards/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(std),
+  }),
+
+  publish: (id: string) => apiFetch<any>(`/standards/${id}/publish`, {
+    method: 'POST',
+  }),
+
+  remove: (id: string) => apiFetch<void>(`/standards/${id}`, {
+    method: 'DELETE',
+  }),
+
+  listGlossary: (params?: { domain?: string; category?: string; keyword?: string }) => {
+    const query = new URLSearchParams(params as any).toString();
+    return apiFetch<any[]>(`/standards/glossary${query ? `?${query}` : ''}`);
+  },
+
+  createGlossary: (term: any) => apiFetch<any>('/standards/glossary', {
+    method: 'POST',
+    body: JSON.stringify(term),
+  }),
+
+  updateGlossary: (id: string, term: any) => apiFetch<any>(`/standards/glossary/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(term),
+  }),
+
+  removeGlossary: (id: string) => apiFetch<void>(`/standards/glossary/${id}`, {
+    method: 'DELETE',
+  }),
+
+  listCodes: (codeSet?: string) => {
+    const query = codeSet ? `?codeSet=${encodeURIComponent(codeSet)}` : '';
+    return apiFetch<any[]>(`/standards/codes${query}`);
+  },
+
+  listCodeSets: () => apiFetch<any[]>('/standards/codes/sets'),
+
+  createCode: (code: any) => apiFetch<any>('/standards/codes', {
+    method: 'POST',
+    body: JSON.stringify(code),
+  }),
+
+  removeCode: (id: string) => apiFetch<void>(`/standards/codes/${id}`, {
+    method: 'DELETE',
+  }),
+
+  namingCheck: () => apiFetch<any>('/standards/naming-check', {
+    method: 'POST',
+  }),
+};
+
+// Approval API
+export const approvalApi = {
+  listPending: () => apiFetch<any[]>('/approvals/pending'),
+
+  getRecords: (changeId: string) => apiFetch<any[]>(`/approvals/records/${changeId}`),
+
+  listDecisions: (limit = 20) => apiFetch<any[]>(`/approvals/decisions?limit=${limit}`),
+
+  submit: (changeId: string, body?: { actor?: string; comment?: string }) =>
+    apiFetch<any>(`/approvals/${changeId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify(body || {}),
+    }),
+
+  approve: (changeId: string, body?: { actor?: string; comment?: string }) =>
+    apiFetch<any>(`/approvals/${changeId}/approve`, {
+      method: 'POST',
+      body: JSON.stringify(body || {}),
+    }),
+
+  reject: (changeId: string, body?: { actor?: string; comment?: string }) =>
+    apiFetch<any>(`/approvals/${changeId}/reject`, {
+      method: 'POST',
+      body: JSON.stringify(body || {}),
+    }),
+};
+
 export default {
   asset: assetApi,
   lineage: lineageApi,
@@ -326,4 +429,7 @@ export default {
   notification: notificationApi,
   collector: collectorApi,
   impact: impactApi,
+  dashboard: dashboardApi,
+  standard: standardApi,
+  approval: approvalApi,
 };

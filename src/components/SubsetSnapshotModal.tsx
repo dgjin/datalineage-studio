@@ -59,7 +59,7 @@ export const SubsetSnapshotModal: React.FC<SubsetSnapshotModalProps> = ({
 
   // Generate Markdown snapshot report
   const markdownReport = useMemo(() => {
-    let md = `# 📊 数据血缘子集架构快照 (Data Lineage Subset Snapshot)\n\n`;
+    let md = `# 数据血缘子集架构快照 (Data Lineage Subset Snapshot)\n\n`;
     md += `- **快照编号**: \`${snapshotId}\`\n`;
     md += `- **生成时间**: \`${snapshotTimestamp}\`\n`;
     md += `- **业务空间**: \`${currentSpace.toUpperCase()}\`\n`;
@@ -82,7 +82,7 @@ export const SubsetSnapshotModal: React.FC<SubsetSnapshotModalProps> = ({
       subsetEdges.forEach(e => {
         const fromAsset = selectedAssets.find(a => a.id === e.from);
         const toAsset = selectedAssets.find(a => a.id === e.to);
-        md += `| \`${fromAsset?.name || e.from}\` | \`${toAsset?.name || e.to}\` | ${e.kind} | ${e.confidence}% | ${e.isCriticalPath ? '⚠️ 是' : '否'} |\n`;
+        md += `| \`${fromAsset?.name || e.from}\` | \`${toAsset?.name || e.to}\` | ${e.kind} | ${e.confidence}% | ${e.isCriticalPath ? '是 (关键路径)' : '否'} |\n`;
       });
     }
 

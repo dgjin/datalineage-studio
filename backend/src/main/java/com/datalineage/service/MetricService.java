@@ -1,9 +1,13 @@
 package com.datalineage.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.datalineage.entity.AssetColumnEntity;
+import com.datalineage.entity.AssetEntity;
 import com.datalineage.entity.MetricEntity;
 import com.datalineage.entity.MetricHistoryEntity;
 import com.datalineage.exception.BusinessException;
+import com.datalineage.mapper.AssetColumnMapper;
+import com.datalineage.mapper.AssetMapper;
 import com.datalineage.mapper.MetricHistoryMapper;
 import com.datalineage.mapper.MetricMapper;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -25,6 +30,8 @@ public class MetricService {
 
     private final MetricMapper metricMapper;
     private final MetricHistoryMapper metricHistoryMapper;
+    private final AssetMapper assetMapper;
+    private final AssetColumnMapper assetColumnMapper;
 
     public List<MetricEntity> listMetrics(String status, String type, String owner, String keyword) {
         if (keyword != null && !keyword.isEmpty()) {
@@ -98,6 +105,12 @@ public class MetricService {
             metric.setVersion(bumpMinor(existing.getVersion()));
         }
 
+        // Publish gate: a metric transitioning to PUBLISHED must have every
+        // referenced physical column resolvable against collected metadata.
+        if ("PUBLISHED".equals(metric.getStatus()) && !"PUBLISHED".equals(existing.getStatus())) {
+            validateReferencedColumns(metric);
+        }
+
         metricMapper.updateById(metric);
 
         // Record version history if caliber or measure expression changed
@@ -125,6 +138,43 @@ public class MetricService {
 
     public List<MetricEntity> getMetricsByAsset(String assetId) {
         return metricMapper.findByReferencedAsset(assetId);
+    }
+
+    /**
+     * Verify that every referenced column of the metric points to a real asset
+     * column; blocks publishing metrics with dangling caliber bindings.
+     */
+    private void validateReferencedColumns(MetricEntity metric) {
+        List<MetricEntity.ReferencedColumn> refs = metric.getReferencedColumns();
+        if (refs == null || refs.isEmpty()) {
+            return;
+        }
+        List<String> missing = new ArrayList<>();
+        for (MetricEntity.ReferencedColumn ref : refs) {
+            AssetEntity asset = null;
+            if (ref.getAssetId() != null && !ref.getAssetId().isBlank()) {
+                asset = assetMapper.selectById(ref.getAssetId());
+            }
+            if (asset == null && ref.getAssetName() != null && !ref.getAssetName().isBlank()) {
+                asset = assetMapper.selectOne(new QueryWrapper<AssetEntity>()
+                        .eq("name", ref.getAssetName()).last("LIMIT 1"));
+            }
+            if (asset == null) {
+                missing.add(ref.getAssetName() != null ? ref.getAssetName() : ref.getAssetId());
+                continue;
+            }
+            if (ref.getColumnName() != null && !ref.getColumnName().isBlank()) {
+                Long count = assetColumnMapper.selectCount(new QueryWrapper<AssetColumnEntity>()
+                        .eq("asset_id", asset.getId())
+                        .eq("name", ref.getColumnName()));
+                if (count == null || count == 0) {
+                    missing.add(asset.getName() + "." + ref.getColumnName());
+                }
+            }
+        }
+        if (!missing.isEmpty()) {
+            throw new BusinessException("指标发布校验失败：引用的物理列不存在 - " + String.join(", ", missing));
+        }
     }
 
     private String bumpMinor(String version) {

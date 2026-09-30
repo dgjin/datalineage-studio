@@ -263,7 +263,7 @@ FROM ods_crm_customer;`;
               >
                 {selectedAsset.columns.map(c => (
                   <option key={c.id} value={c.name}>
-                    {c.name} ({c.type}) {c.isPii ? '🔒' : ''}
+                    {c.name} ({c.type}) {c.isPii ? '[PII]' : ''}
                   </option>
                 ))}
               </select>

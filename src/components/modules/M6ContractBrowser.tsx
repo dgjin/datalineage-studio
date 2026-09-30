@@ -77,8 +77,9 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
 
         {/* Tree List */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1 text-xs font-mono">
-          <div className="text-slate-400 px-2 py-1 font-sans text-[11px] font-semibold">
-            📁 crm (客户域)
+          <div className="text-slate-400 px-2 py-1 font-sans text-[11px] font-semibold flex items-center gap-1.5">
+            <FolderTree className="w-3.5 h-3.5 text-slate-500" />
+            <span>crm (客户域)</span>
           </div>
           <button
             onClick={() => setSelectedFile('contracts/crm/customer.yaml')}
@@ -103,8 +104,9 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
             <span>dwd_customer.yaml</span>
           </button>
 
-          <div className="text-slate-400 px-2 py-1 font-sans text-[11px] font-semibold mt-2">
-            📁 trade (交易结算域)
+          <div className="text-slate-400 px-2 py-1 font-sans text-[11px] font-semibold mt-2 flex items-center gap-1.5">
+            <FolderTree className="w-3.5 h-3.5 text-slate-500" />
+            <span>trade (交易结算域)</span>
           </div>
           <button
             onClick={() => setSelectedFile('contracts/trade/order.yaml')}

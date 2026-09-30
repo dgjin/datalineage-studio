@@ -17,6 +17,7 @@ import { M8NotificationCenter } from './components/modules/M8NotificationCenter'
 import { M9GovernanceDashboard } from './components/modules/M9GovernanceDashboard';
 import { M10CollectorAdmin } from './components/modules/M10CollectorAdmin';
 import { M11DataSourceManager } from './components/modules/M11DataSourceManager';
+import { M12StandardsHub } from './components/modules/M12StandardsHub';
 
 // Mock initial data
 import {
@@ -276,6 +277,10 @@ export default function App() {
 
           {activeTab === 'datasources' && (
             <M11DataSourceManager />
+          )}
+
+          {activeTab === 'standards' && (
+            <M12StandardsHub />
           )}
         </main>
       </div>

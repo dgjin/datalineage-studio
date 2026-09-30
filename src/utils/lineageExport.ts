@@ -392,7 +392,7 @@ export function generateMermaidDsl(assets: Asset[], edges: LineageEdge[]): strin
     const fromSafe = edge.from.replace(/[^a-zA-Z0-9_]/g, '_');
     const toSafe = edge.to.replace(/[^a-zA-Z0-9_]/g, '_');
     if (edge.isCriticalPath) {
-      lines.push(`  ${fromSafe} == "🚨破坏性影响" ==> ${toSafe}`);
+      lines.push(`  ${fromSafe} == "破坏性影响" ==> ${toSafe}`);
     } else if (edge.confidence < 90) {
       lines.push(`  ${fromSafe} -. "${edge.confidence}%" .-> ${toSafe}`);
     } else {

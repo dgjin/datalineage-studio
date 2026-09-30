@@ -5,6 +5,7 @@
  */
 import { create } from 'zustand';
 import { assetApi, lineageApi, changeApi } from '../services/api';
+import { adaptChange } from '../services/adapters';
 
 export interface LineageState {
   assets: any[];
@@ -54,7 +55,10 @@ export const useLineageStore = create<LineageState>((set) => ({
   fetchChanges: async (params) => {
     set({ loading: true, error: null });
     try {
-      const changes = await changeApi.list(params);
+      // Backend returns flat affected* counters; normalize to the frontend
+      // ChangeEvent contract (affectedCount) so all modules can rely on it.
+      const raw = await changeApi.list(params);
+      const changes = (raw ?? []).map(adaptChange);
       set({ changes, backendOnline: true, loading: false, lastSyncedAt: Date.now() });
     } catch (e: any) {
       set({ error: e?.message ?? 'Failed to load change events', backendOnline: false, loading: false });

@@ -138,7 +138,7 @@ export interface ChangeEvent {
   detectedBy: 'CI_CONTRACT' | 'CDC' | 'PROBE' | 'OPENLINEAGE';
   isBreaking: boolean;
   isManaged: boolean; // if false, it's an unmanaged "暗改"
-  status: 'DETECTED' | 'ANALYZED' | 'ACK_PENDING' | 'RESOLVED' | 'BLOCKED';
+  status: 'DETECTED' | 'ANALYZED' | 'ACK_PENDING' | 'APPROVAL_PENDING' | 'APPROVED' | 'REJECTED' | 'RESOLVED' | 'BLOCKED';
   actor: string;
   traceId: string;
   mrUrl?: string;

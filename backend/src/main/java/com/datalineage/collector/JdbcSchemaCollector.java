@@ -12,6 +12,7 @@ import com.datalineage.mapper.ChangeEventMapper;
 import com.datalineage.mapper.LineageEdgeMapper;
 import com.datalineage.service.DataSourceService;
 import com.datalineage.service.SchemaVersionService;
+import com.datalineage.service.StandardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jasypt.encryption.StringEncryptor;
@@ -35,6 +36,7 @@ public class JdbcSchemaCollector {
     private final StringEncryptor stringEncryptor;
     private final SqlColumnLineageParser columnLineageParser;
     private final SchemaVersionService schemaVersionService;
+    private final StandardService standardService;
 
     /**
      * Execute metadata collection task
@@ -172,7 +174,11 @@ public class JdbcSchemaCollector {
             assetMapper.updateById(asset);
             result.incrementAssetsUpdated();
         }
-        
+
+        // Standard hub loop: check the asset name against PUBLISHED naming
+        // standards; violations are turned into quality issues automatically.
+        standardService.checkAssetNaming(asset);
+
         // Collect columns
         collectColumns(conn, metaData, assetId, schema, tableName, task, result);
     }

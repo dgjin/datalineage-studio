@@ -5,6 +5,7 @@ import {
   ChangeEvent, 
   QualityIssue 
 } from '../../types/lineage';
+import { GovernanceHealthPanel } from '../GovernanceHealthPanel';
 import { 
   Search, 
   Filter, 
@@ -464,6 +465,9 @@ export const M1AssetCatalog: React.FC<M1AssetCatalogProps> = ({
                     </div>
                   </div>
                 )}
+
+                {/* 治理体检：健康分 / Owner / 契约 / 质量 / 变更 / 僵尸资产 */}
+                <GovernanceHealthPanel assetId={selectedAsset.id} />
               </div>
             )}
 

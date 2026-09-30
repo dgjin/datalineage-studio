@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ChangeEvent } from '../../types/lineage';
+import { approvalApi } from '../../services/api';
+import { useLineageStore } from '../../stores/lineageStore';
 import { 
   Activity, 
   AlertTriangle, 
@@ -14,7 +16,9 @@ import {
   Flame,
   ArrowRight,
   Filter,
-  FileCheck
+  FileCheck,
+  Gavel,
+  RefreshCw
 } from 'lucide-react';
 
 interface M4ChangeCenterProps {
@@ -28,16 +32,19 @@ export const M4ChangeCenter: React.FC<M4ChangeCenterProps> = ({
   onSimulateChange,
   onNavigateContract
 }) => {
-  const [activeTab, setActiveTab] = useState<'ALL' | 'PENDING_ACK' | 'DARK_CHANGES'>('ALL');
+  const [activeTab, setActiveTab] = useState<'ALL' | 'APPROVAL' | 'PENDING_ACK' | 'DARK_CHANGES'>('ALL');
   const [selectedChangeId, setSelectedChangeId] = useState<string>(changes[0]?.id || '');
   const [contractPatchModalOpen, setContractPatchModalOpen] = useState(false);
   const [releaseNoteModalOpen, setReleaseNoteModalOpen] = useState(false);
   const [copiedPatch, setCopiedPatch] = useState(false);
   const [copiedReleaseNote, setCopiedReleaseNote] = useState(false);
+  const [approvalRecords, setApprovalRecords] = useState<any[]>([]);
+  const [approvalBusy, setApprovalBusy] = useState(false);
 
   const selectedChange = changes.find(c => c.id === selectedChangeId) || changes[0];
 
   const filteredChanges = changes.filter(c => {
+    if (activeTab === 'APPROVAL') return c.status === 'APPROVAL_PENDING';
     if (activeTab === 'PENDING_ACK') return c.status === 'ACK_PENDING';
     if (activeTab === 'DARK_CHANGES') return !c.isManaged;
     return true;
@@ -45,6 +52,37 @@ export const M4ChangeCenter: React.FC<M4ChangeCenterProps> = ({
 
   const unmanagedCount = changes.filter(c => !c.isManaged).length;
   const pendingAckCount = changes.filter(c => c.status === 'ACK_PENDING').length;
+  const pendingApprovalCount = changes.filter(c => c.status === 'APPROVAL_PENDING').length;
+
+  // Approval trail for the selected change (refresh when its status flips)
+  useEffect(() => {
+    if (!selectedChange?.id || selectedChange.id.startsWith('mock')) {
+      setApprovalRecords([]);
+      return;
+    }
+    let cancelled = false;
+    approvalApi.getRecords(selectedChange.id)
+      .then(recs => { if (!cancelled) setApprovalRecords(recs); })
+      .catch(() => { if (!cancelled) setApprovalRecords([]); });
+    return () => { cancelled = true; };
+  }, [selectedChange?.id, selectedChange?.status]);
+
+  const decideApproval = useCallback(async (action: 'approve' | 'reject') => {
+    if (!selectedChange) return;
+    setApprovalBusy(true);
+    try {
+      if (action === 'approve') {
+        await approvalApi.approve(selectedChange.id, { actor: '数据治理组', comment: '影响面已评估，批准发布' });
+      } else {
+        await approvalApi.reject(selectedChange.id, { actor: '数据治理组', comment: '下游影响未确认，驳回阻断发布' });
+      }
+      await useLineageStore.getState().fetchChanges();
+    } catch (e: any) {
+      alert(`审批操作失败: ${e.message}`);
+    } finally {
+      setApprovalBusy(false);
+    }
+  }, [selectedChange]);
 
   const generatedContractPatch = `# =========================================================
 # 由 DataLineage Studio 针对生产暗改自动反向生成的契约补丁
@@ -123,6 +161,20 @@ auditNote: "反向补录已自动生成 MR !135，请架构师执行代码审查
               全部变更
             </button>
             <button
+              onClick={() => setActiveTab('APPROVAL')}
+              className={`flex-1 py-1 rounded-md font-medium transition flex items-center justify-center gap-1 ${
+                activeTab === 'APPROVAL' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Gavel className="w-3.5 h-3.5 text-indigo-300" />
+              <span>待审批门禁</span>
+              {pendingApprovalCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-slate-900 text-indigo-300 text-[10px] flex items-center justify-center font-bold">
+                  {pendingApprovalCount}
+                </span>
+              )}
+            </button>
+            <button
               onClick={() => setActiveTab('PENDING_ACK')}
               className={`flex-1 py-1 rounded-md font-medium transition flex items-center justify-center gap-1 ${
                 activeTab === 'PENDING_ACK' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-slate-200'
@@ -170,6 +222,11 @@ auditNote: "反向补录已自动生成 MR !135，请架构师执行代码审查
                     {!chg.isManaged && (
                       <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
                         暗改高危
+                      </span>
+                    )}
+                    {chg.status === 'APPROVAL_PENDING' && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">
+                        待审批
                       </span>
                     )}
                     <span className={`text-[10px] px-1.5 py-0.2 rounded border font-mono ${
@@ -261,6 +318,70 @@ auditNote: "反向补录已自动生成 MR !135，请架构师执行代码审查
             </div>
           )}
 
+          {/* Approval gate panel (publish approval workflow) */}
+          {(selectedChange.status === 'APPROVAL_PENDING' ||
+            selectedChange.status === 'APPROVED' ||
+            selectedChange.status === 'REJECTED') && (
+            <div className={`p-4 rounded-xl border space-y-3 text-xs ${
+              selectedChange.status === 'APPROVAL_PENDING'
+                ? 'bg-indigo-500/10 border-indigo-500/30'
+                : selectedChange.status === 'APPROVED'
+                  ? 'bg-emerald-500/10 border-emerald-500/30'
+                  : 'bg-rose-500/10 border-rose-500/30'
+            }`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <span className={`font-bold flex items-center gap-2 ${
+                  selectedChange.status === 'APPROVAL_PENDING'
+                    ? 'text-indigo-200'
+                    : selectedChange.status === 'APPROVED'
+                      ? 'text-emerald-200'
+                      : 'text-rose-200'
+                }`}>
+                  <Gavel className="w-4 h-4" />
+                  {selectedChange.status === 'APPROVAL_PENDING'
+                    ? `发布审批门禁：影响面 ${selectedChange.impactVerdict}，审批通过后方可发布`
+                    : selectedChange.status === 'APPROVED'
+                      ? '审批已通过：该变更已获准进入发布流程'
+                      : '审批已驳回：该变更被阻断，禁止发布'}
+                </span>
+                {selectedChange.status === 'APPROVAL_PENDING' && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => decideApproval('approve')}
+                      disabled={approvalBusy}
+                      className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-semibold flex items-center gap-1.5 transition"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      批准发布
+                    </button>
+                    <button
+                      onClick={() => decideApproval('reject')}
+                      disabled={approvalBusy}
+                      className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white font-semibold flex items-center gap-1.5 transition"
+                    >
+                      <ShieldAlert className="w-3.5 h-3.5" />
+                      驳回
+                    </button>
+                  </div>
+                )}
+              </div>
+              {approvalRecords.length > 0 && (
+                <div className="space-y-1 pt-1 border-t border-slate-800/60">
+                  {approvalRecords.map((r: any) => (
+                    <div key={r.id} className="flex items-center gap-2 text-[10px] text-slate-400">
+                      <span className={`font-mono font-bold ${
+                        r.action === 'APPROVE' ? 'text-emerald-400' : r.action === 'REJECT' ? 'text-rose-400' : 'text-indigo-300'
+                      }`}>{r.action}</span>
+                      <span className="text-slate-300">{r.actor || '-'}</span>
+                      <span className="truncate">{r.comment || ''}</span>
+                      <span className="ml-auto font-mono shrink-0">{(r.decidedAt || r.createdAt || '').replace('T', ' ').slice(0, 19)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Diff Viewer Card */}
           <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
             <div className="flex items-center justify-between">
@@ -268,8 +389,15 @@ auditNote: "反向补录已自动生成 MR !135，请架构师执行代码审查
                 <FileCode className="w-4 h-4 text-indigo-400" />
                 <span>结构变更差异比对 (Diff Viewer)</span>
               </h3>
-              <span className="text-[11px] text-slate-400 font-mono">
-                {selectedChange.isBreaking ? '⚠️ 破坏性改动' : '✓ 兼容性改动'}
+              <span className={`text-[11px] font-mono inline-flex items-center gap-1 ${
+                selectedChange.isBreaking ? 'text-rose-400' : 'text-slate-400'
+              }`}>
+                {selectedChange.isBreaking ? (
+                  <>
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>破坏性改动</span>
+                  </>
+                ) : '✓ 兼容性改动'}
               </span>
             </div>
 

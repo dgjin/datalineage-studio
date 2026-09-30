@@ -299,8 +299,9 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
                         <span className="text-[10px] text-slate-400">{h.date}</span>
                       </div>
                       {h.breakingHistoryData && (
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-semibold">
-                          ⚠️ 历史数据不可直接横向比较 (口径断点)
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-semibold inline-flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>历史数据不可直接横向比较 (口径断点)</span>
                         </span>
                       )}
                     </div>
