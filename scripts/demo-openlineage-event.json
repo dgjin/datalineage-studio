@@ -1,0 +1,28 @@
+{
+  "eventType": "COMPLETE",
+  "eventTime": "2026-09-30T08:30:00.000Z",
+  "producer": "https://github.com/OpenLineage/OpenLineage/tree/1.9.0/integration/spark",
+  "job": {
+    "namespace": "airflow-prod",
+    "name": "etl_order_metrics_daily"
+  },
+  "run": {
+    "runId": "d46e2c9e-1a3f-4b2c-9d5e-7f8a9b0c1d2e"
+  },
+  "inputs": [
+    {
+      "namespace": "mysql://dl-mysql-test:3307",
+      "name": "dl_demo.ods_orders"
+    },
+    {
+      "namespace": "mysql://dl-mysql-test:3307",
+      "name": "dl_demo.ods_order_items"
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "mysql://dl-mysql-test:3307",
+      "name": "dl_demo.dws_order_metrics"
+    }
+  ]
+}

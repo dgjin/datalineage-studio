@@ -1,0 +1,6 @@
+{
+  "name": "DataLineage Studio - 通用数据血缘与变更治理平台",
+  "description": "以血缘图谱为核心、变更事件为驱动、契约与校验为质量底线的企业级通用数据资产管理应用",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
