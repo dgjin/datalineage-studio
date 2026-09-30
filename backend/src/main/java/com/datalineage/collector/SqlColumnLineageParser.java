@@ -47,7 +47,7 @@ import java.util.Set;
 public class SqlColumnLineageParser {
 
     /** SQL words that can surface as bare identifiers inside expressions but are not columns. */
-    private static final Set<String> SQL_KEYWORDS = Set.of(
+    static final Set<String> SQL_KEYWORDS = Set.of(
             "case", "when", "then", "else", "end", "and", "or", "not", "is", "null",
             "true", "false", "in", "like", "between", "as", "on", "distinct", "interval",
             "current_date", "current_time", "current_timestamp", "localtime", "localtimestamp");
@@ -104,31 +104,7 @@ public class SqlColumnLineageParser {
                 }
 
                 // Collect column references: {owner or null, column}, de-duplicated by owner.column
-                Map<String, String[]> refs = new LinkedHashMap<>();
-                expr.accept(new SQLASTVisitorAdapter() {
-                    @Override
-                    public boolean visit(SQLPropertyExpr x) {
-                        String name = strip(String.valueOf(x.getName()));
-                        if (name == null || name.isEmpty()
-                                || "*".equals(name) || knownNames.contains(name.toLowerCase())) {
-                            return true;
-                        }
-                        refs.putIfAbsent(ownerName(x) + "." + name, new String[]{ownerName(x), name});
-                        return true;
-                    }
-
-                    @Override
-                    public boolean visit(SQLIdentifierExpr x) {
-                        String name = strip(x.getName());
-                        if (name == null || name.isEmpty()
-                                || knownNames.contains(name.toLowerCase())
-                                || SQL_KEYWORDS.contains(name.toLowerCase())) {
-                            return true;
-                        }
-                        refs.putIfAbsent("." + name, new String[]{null, name});
-                        return true;
-                    }
-                });
+                Map<String, String[]> refs = collectColumnRefs(expr, knownNames);
                 if (refs.isEmpty()) {
                     continue; // literal-only projection (e.g. constant), no lineage
                 }
@@ -161,12 +137,45 @@ public class SqlColumnLineageParser {
     }
 
     /**
+     * Collect column references from an expression: {owner or null, column}, de-duplicated
+     * by owner.column. Shared with {@link EtlSqlLineageParser} for INSERT..SELECT parsing.
+     */
+    static Map<String, String[]> collectColumnRefs(SQLExpr expr, Set<String> knownNames) {
+        Map<String, String[]> refs = new LinkedHashMap<>();
+        expr.accept(new SQLASTVisitorAdapter() {
+            @Override
+            public boolean visit(SQLPropertyExpr x) {
+                String name = strip(String.valueOf(x.getName()));
+                if (name == null || name.isEmpty()
+                        || "*".equals(name) || knownNames.contains(name.toLowerCase())) {
+                    return true;
+                }
+                refs.putIfAbsent(ownerName(x) + "." + name, new String[]{ownerName(x), name});
+                return true;
+            }
+
+            @Override
+            public boolean visit(SQLIdentifierExpr x) {
+                String name = strip(x.getName());
+                if (name == null || name.isEmpty()
+                        || knownNames.contains(name.toLowerCase())
+                        || SQL_KEYWORDS.contains(name.toLowerCase())) {
+                    return true;
+                }
+                refs.putIfAbsent("." + name, new String[]{null, name});
+                return true;
+            }
+        });
+        return refs;
+    }
+
+    /**
      * Walk the FROM tree and register [schema, table] per alias.
      *
      * @return true when a source cannot be resolved as a plain table (subquery etc.)
      */
-    private boolean collectSources(SQLTableSource source, String defaultSchema,
-                                   Map<String, String[]> sources, Set<String> knownNames) {
+    static boolean collectSources(SQLTableSource source, String defaultSchema,
+                                  Map<String, String[]> sources, Set<String> knownNames) {
         if (source == null) {
             return false;
         }
@@ -189,7 +198,9 @@ public class SqlColumnLineageParser {
             sources.put(alias.toLowerCase(), new String[]{schema, table});
             knownNames.add(alias.toLowerCase());
             knownNames.add(table.toLowerCase());
-            knownNames.add(schema.toLowerCase());
+            if (schema != null) {
+                knownNames.add(schema.toLowerCase());
+            }
             if (!alias.equalsIgnoreCase(table)) {
                 sources.putIfAbsent(table.toLowerCase(), new String[]{schema, table});
             }
@@ -214,7 +225,7 @@ public class SqlColumnLineageParser {
         return null; // ambiguous across multiple sources
     }
 
-    private String ownerName(SQLPropertyExpr ref) {
+    static String ownerName(SQLPropertyExpr ref) {
         SQLExpr owner = ref.getOwner();
         if (owner == null) {
             return null;
@@ -238,13 +249,13 @@ public class SqlColumnLineageParser {
         return null;
     }
 
-    private String trimExpr(SQLExpr expr) {
+    static String trimExpr(SQLExpr expr) {
         String text = strip(String.valueOf(expr));
         text = text.replaceAll("\\s+", " ").trim();
         return text.length() > 300 ? text.substring(0, 300) : text;
     }
 
-    private static String strip(String s) {
+    static String strip(String s) {
         if (s == null) {
             return null;
         }

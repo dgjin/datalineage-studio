@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Asset, 
   LineageEdge, 
   ChangeEvent, 
   QualityIssue 
 } from '../../types/lineage';
+import { datasourceApi } from '../../services/api';
 import { GovernanceHealthPanel } from '../GovernanceHealthPanel';
 import { 
   Search, 
@@ -58,6 +59,18 @@ export const M1AssetCatalog: React.FC<M1AssetCatalogProps> = ({
   const [selectedSpace, setSelectedSpace] = useState<string>('ALL');
   const [drawerTab, setDrawerTab] = useState<'OVERVIEW' | 'COLUMNS' | 'LINEAGE' | 'CHANGES' | 'QUALITY' | 'DISCUSS'>('OVERVIEW');
   const [commentInput, setCommentInput] = useState('');
+  // Data source id -> name, for the ownership badge (multi-source layer import)
+  const [dsNames, setDsNames] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    datasourceApi.list()
+      .then(list => {
+        const map: Record<string, string> = {};
+        (list || []).forEach((d: any) => { map[d.id] = d.name; });
+        setDsNames(map);
+      })
+      .catch(() => {});
+  }, []);
   const [comments, setComments] = useState<Record<string, { author: string; time: string; text: string }[]>>({
     'asset:ods_crm_customer': [
       { author: '陈敏 (数据数仓组)', time: '2026-09-28 16:00', text: '已收到 phone 列拟废弃通知，DWD 层正在使用 phone_hash 替代下游关联，请架构师把关。' },
@@ -260,6 +273,12 @@ export const M1AssetCatalog: React.FC<M1AssetCatalogProps> = ({
                         <span className="ml-1 text-[11px] text-slate-400">
                           {asset.type}
                         </span>
+                        {asset.dataSourceId && dsNames[asset.dataSourceId] && (
+                          <div className="mt-1 flex items-center gap-1 text-[10px] text-teal-300/90" title="归属数据源（分层导入）">
+                            <Database className="w-3 h-3" />
+                            <span>{dsNames[asset.dataSourceId]}</span>
+                          </div>
+                        )}
                       </td>
 
                       {/* Space */}

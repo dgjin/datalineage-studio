@@ -35,4 +35,16 @@ public interface LineageEdgeMapper extends BaseMapper<LineageEdgeEntity> {
             + "</foreach>)"
             + "</script>")
     int deleteAutoDiscoveredBySchemas(@Param("schemas") List<String> schemas);
+
+    /**
+     * Remove cross-source edges produced by a layer import relation. The edge set is
+     * scoped by (source kind + endpoints inside the declared from/to source-layer
+     * boxes), so manual, contract and single-source edges are never touched.
+     */
+    @Delete("DELETE FROM lineage_edges WHERE source = #{source} "
+            + "AND from_asset_id IN (SELECT id FROM assets WHERE data_source_id = #{fromDs} AND layer = #{fromLayer}) "
+            + "AND to_asset_id IN (SELECT id FROM assets WHERE data_source_id = #{toDs} AND layer = #{toLayer})")
+    int deleteRelationEdges(@Param("source") String source,
+                            @Param("fromDs") String fromDs, @Param("fromLayer") String fromLayer,
+                            @Param("toDs") String toDs, @Param("toLayer") String toLayer);
 }

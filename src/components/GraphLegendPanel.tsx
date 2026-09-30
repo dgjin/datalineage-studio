@@ -147,6 +147,15 @@ export const GraphLegendPanel: React.FC<GraphLegendPanelProps> = ({
       badgeColor: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
       description: '展开物理表或视图后，展示源字段到目标字段的具体映射函数（如 CONCAT、SHA256、CASE WHEN）。',
       semantics: '细粒度追踪字段隐私分级、敏感数据流向及计算口径一致性。'
+    },
+    {
+      name: '跨源导入关系 (Cross-Source Import)',
+      style: 'crosssource',
+      strokeColor: '#14b8a6',
+      badge: '青绿色 · 跨数据源层间流转',
+      badgeColor: 'bg-teal-500/20 text-teal-300 border-teal-500/40',
+      description: '由「分层导入关系」声明构建的跨数据源血缘：同名匹配（剥离层前缀）自动配对，或 ETL SQL（INSERT INTO .. SELECT）解析出表级与列级映射。',
+      semantics: '标识 ODS / DWD / DWS / ADS / APP 各层分属不同数据源时的层间数据流转，供影响分析与口径溯源跨越物理数据源边界。'
     }
   ];
 
@@ -430,6 +439,12 @@ export const GraphLegendPanel: React.FC<GraphLegendPanelProps> = ({
                               <svg className="w-full h-2">
                                 <line x1="0" y1="4" x2="28" y2="4" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="2 2" />
                                 <circle cx="30" cy="4" r="2" fill="#38bdf8" />
+                              </svg>
+                            )}
+                            {edge.style === 'crosssource' && (
+                              <svg className="w-full h-2">
+                                <line x1="0" y1="4" x2="28" y2="4" stroke="#14b8a6" strokeWidth="2.5" />
+                                <polygon points="26,1 32,4 26,7" fill="#14b8a6" />
                               </svg>
                             )}
                           </div>

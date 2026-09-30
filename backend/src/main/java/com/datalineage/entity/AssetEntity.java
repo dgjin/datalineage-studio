@@ -21,6 +21,7 @@ public class AssetEntity {
     private String type;
     private String layer;
     private String space;
+    private String dataSourceId;
     private String owner;
     private String ownerEmail;
     private String department;

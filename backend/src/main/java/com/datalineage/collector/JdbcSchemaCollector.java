@@ -143,6 +143,17 @@ public class JdbcSchemaCollector {
 
     private void registerAsset(Connection conn, DatabaseMetaData metaData, String schema, String tableName, 
                                String tableType, String remarks, MetadataCollectTaskEntity task, CollectResult result) {
+        // Layer-prefixed objects (ods_/dwd_/dws_/ads_/app_) route to their own warehouse
+        // layer; anything else keeps the task default layer.
+        String resolvedLayer = LayerResolver.resolve(tableName, task.getDefaultLayer());
+
+        // Optional layer whitelist (empty = register every layer) lets a single-source
+        // task limit registration to specific warehouse layers.
+        if (task.getTargetLayers() != null && !task.getTargetLayers().isEmpty()
+                && !task.getTargetLayers().contains(resolvedLayer)) {
+            return;
+        }
+
         String assetId = "asset:" + schema + "." + tableName;
         
         // Check if asset already exists
@@ -150,15 +161,14 @@ public class JdbcSchemaCollector {
         
         AssetEntity asset = new AssetEntity();
         asset.setId(assetId);
-        // Layer-prefixed objects (ods_/dwd_/dws_/ads_/app_) route to their own warehouse
-        // layer; anything else keeps the task default layer.
-        String resolvedLayer = LayerResolver.resolve(tableName, task.getDefaultLayer());
         asset.setCode(generateAssetCode(resolvedLayer, schema, tableName));
         asset.setName(tableName);
         asset.setDisplayTitle(remarks != null ? remarks : tableName);
         asset.setType("VIEW".equals(tableType) ? "VIEW" : "TABLE");
         asset.setLayer(resolvedLayer);
         asset.setSpace(task.getDefaultSpace());
+        // Source attribution: which data source this asset was collected from
+        asset.setDataSourceId(task.getDataSourceId());
         asset.setOwner(task.getDefaultOwner());
         asset.setStatus("ACTIVE");
         asset.setDescription("Auto-discovered from " + schema);

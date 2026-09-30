@@ -24,4 +24,22 @@ public final class LayerResolver {
         }
         return (fallbackLayer != null && !fallbackLayer.isEmpty()) ? fallbackLayer : "ODS";
     }
+
+    /**
+     * Strip the warehouse layer prefix from an object name so business objects can be
+     * matched across layers (e.g. ods_order -> order, dwd_order -> order).
+     * Names without a recognized prefix are returned unchanged.
+     */
+    public static String stripLayerPrefix(String objectName) {
+        if (objectName == null) {
+            return null;
+        }
+        String lower = objectName.toLowerCase();
+        for (String prefix : new String[]{"ods_", "dwd_", "dws_", "ads_", "app_"}) {
+            if (lower.startsWith(prefix)) {
+                return objectName.substring(prefix.length());
+            }
+        }
+        return objectName;
+    }
 }

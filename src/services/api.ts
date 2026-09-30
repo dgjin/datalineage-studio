@@ -125,6 +125,46 @@ export const datasourceApi = {
   },
 };
 
+// Layer import relations API (multi-source warehouse layer import)
+export const layerImportApi = {
+  stats: () => apiFetch<{
+    layers: { layer: string; dataSourceId: string; dataSourceName: string; assetCount: number }[];
+    relations: any[];
+    crossSourceEdges: number;
+  }>('/layer-imports/stats'),
+
+  list: (params?: { fromLayer?: string; toLayer?: string; status?: string }) => {
+    const query = new URLSearchParams(params as any).toString();
+    return apiFetch<any[]>(`/layer-imports${query ? `?${query}` : ''}`);
+  },
+
+  get: (id: string) => apiFetch<any>(`/layer-imports/${id}`),
+
+  create: (rel: any) => apiFetch<any>('/layer-imports', {
+    method: 'POST',
+    body: JSON.stringify(rel),
+  }),
+
+  update: (id: string, rel: any) => apiFetch<any>(`/layer-imports/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(rel),
+  }),
+
+  remove: (id: string) => apiFetch<any>(`/layer-imports/${id}`, {
+    method: 'DELETE',
+  }),
+
+  preview: (id: string) => apiFetch<any>(`/layer-imports/${id}/preview`, {
+    method: 'POST',
+    body: '{}',
+  }),
+
+  build: (id: string) => apiFetch<any>(`/layer-imports/${id}/build`, {
+    method: 'POST',
+    body: '{}',
+  }),
+};
+
 // Metric API
 export const metricApi = {
   list: () => apiFetch<any[]>('/metrics'),

@@ -29,6 +29,7 @@ export function adaptAsset(a: any): Asset {
     tags: a.tags ?? undefined,
     contractRef: a.contractRef ?? undefined,
     storageFormat: a.storageFormat ?? undefined,
+    dataSourceId: a.dataSourceId ?? undefined,
   };
 }
 

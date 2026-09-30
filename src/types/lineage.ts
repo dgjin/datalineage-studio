@@ -63,6 +63,8 @@ export interface Asset {
   tags?: string[];
   contractRef?: string;
   storageFormat?: string;
+  /** Owning data source id (multi-source layer import). */
+  dataSourceId?: string;
 }
 
 export interface LineageEdge {
@@ -72,7 +74,7 @@ export interface LineageEdge {
   fromCol?: string;
   toCol?: string;
   kind: 'TABLE' | 'COLUMN' | 'METRIC_REF';
-  source: 'CONTRACT' | 'OPENLINEAGE' | 'PARSER' | 'PROBE' | 'JDBC_FK' | 'VIEW_DEP';
+  source: 'CONTRACT' | 'OPENLINEAGE' | 'PARSER' | 'PROBE' | 'JDBC_FK' | 'VIEW_DEP' | 'CROSS_SOURCE' | 'ETL_PARSER';
   confidence: number;
   transformExpr?: string;
   isCriticalPath?: boolean;

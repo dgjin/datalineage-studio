@@ -23,6 +23,8 @@ public class MetadataCollectTaskEntity {
     @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> targetTables;
     @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> targetLayers;
+    @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> excludeTables;
     private String scheduleCron;
     private Boolean autoRegisterAsset;

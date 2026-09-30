@@ -131,6 +131,8 @@ export const FreeGraphCanvas: React.FC<FreeGraphCanvasProps> = ({
 
       const isCritical = edge.isCriticalPath;
       const isInferred = edge.confidence < 90;
+      // Cross-source relations (multi-source layer import) are highlighted in teal
+      const isCrossSource = edge.source === 'CROSS_SOURCE' || edge.source === 'ETL_PARSER';
 
       const isInternalSubsetEdge = Boolean(
         highlightDependenciesActive && selectedNodeIds && selectedNodeIds.has(edge.from) && selectedNodeIds.has(edge.to)
@@ -159,6 +161,8 @@ export const FreeGraphCanvas: React.FC<FreeGraphCanvasProps> = ({
         ? '#a855f7'
         : isCritical
         ? '#f43f5e'
+        : isCrossSource
+        ? '#14b8a6'
         : isInferred
         ? '#f59e0b'
         : '#6366f1';
@@ -188,7 +192,7 @@ export const FreeGraphCanvas: React.FC<FreeGraphCanvasProps> = ({
             strokeWidth={strokeWidth}
             strokeDasharray={strokeDasharray}
             strokeOpacity={isShortestPathEdge || isInternalSubsetEdge ? 1 : isCritical || isBoundarySubsetEdge ? 0.9 : 0.6}
-            markerEnd={isShortestPathEdge ? 'url(#arrow-shortest)' : isInternalSubsetEdge ? 'url(#arrow-subset)' : isCritical ? 'url(#arrow-critical)' : isInferred ? 'url(#arrow-inferred)' : 'url(#arrow-standard)'}
+            markerEnd={isShortestPathEdge ? 'url(#arrow-shortest)' : isInternalSubsetEdge ? 'url(#arrow-subset)' : isCritical ? 'url(#arrow-critical)' : isCrossSource ? 'url(#arrow-crosssource)' : isInferred ? 'url(#arrow-inferred)' : 'url(#arrow-standard)'}
           />
         </g>
       );
@@ -221,6 +225,9 @@ export const FreeGraphCanvas: React.FC<FreeGraphCanvasProps> = ({
           </marker>
           <marker id="arrow-inferred" markerWidth="8" markerHeight="8" refX="28" refY="4" orient="auto">
             <polygon points="0 1, 8 4, 0 7" fill="#f59e0b" />
+          </marker>
+          <marker id="arrow-crosssource" markerWidth="8" markerHeight="8" refX="28" refY="4" orient="auto">
+            <polygon points="0 1, 8 4, 0 7" fill="#14b8a6" />
           </marker>
           <marker id="arrow-shortest" markerWidth="10" markerHeight="10" refX="30" refY="5" orient="auto">
             <polygon points="0 2, 10 5, 0 8" fill="#06b6d4" />

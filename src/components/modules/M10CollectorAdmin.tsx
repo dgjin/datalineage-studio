@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CollectorAdapter } from '../../types/lineage';
+import { LayerImportPanel } from '../LayerImportPanel';
 import { 
   Cpu, 
   CheckCircle2, 
@@ -12,6 +13,7 @@ import {
   Plus, 
   Clock, 
   ArrowRight,
+  Layers,
   Database
 } from 'lucide-react';
 
@@ -22,7 +24,7 @@ interface M10CollectorAdminProps {
 export const M10CollectorAdmin: React.FC<M10CollectorAdminProps> = ({ collectors }) => {
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<Record<string, string>>({});
-  const [activeTab, setActiveTab] = useState<'COLLECTORS' | 'METAMODEL'>('COLLECTORS');
+  const [activeTab, setActiveTab] = useState<'COLLECTORS' | 'LAYER_IMPORT' | 'METAMODEL'>('COLLECTORS');
 
   const handleTestConnection = (id: string) => {
     setTestingId(id);
@@ -94,6 +96,14 @@ relationTypes:
             }`}
           >
             采集适配器管理
+          </button>
+          <button
+            onClick={() => setActiveTab('LAYER_IMPORT')}
+            className={`px-3 py-1.5 rounded-md font-medium transition ${
+              activeTab === 'LAYER_IMPORT' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            分层导入（跨数据源）
           </button>
           <button
             onClick={() => setActiveTab('METAMODEL')}
@@ -186,6 +196,15 @@ relationTypes:
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {activeTab === 'LAYER_IMPORT' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-xs text-slate-400">
+            <span>多数据源分层导入：ODS / DWD / DWS / ADS / APP 各层可从不同数据源独立采集，并声明层间流向自动建立跨源血缘</span>
+          </div>
+          <LayerImportPanel />
         </div>
       )}
 
