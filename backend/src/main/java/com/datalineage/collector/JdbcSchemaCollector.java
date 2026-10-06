@@ -42,10 +42,19 @@ public class JdbcSchemaCollector {
      * Execute metadata collection task
      */
     public CollectResult collect(MetadataCollectTaskEntity task) {
+        return collect(task, null);
+    }
+
+    /**
+     * Execute metadata collection task, reporting coarse-grained progress to the
+     * listener so the async runner can expose a pollable progress bar.
+     */
+    public CollectResult collect(MetadataCollectTaskEntity task, ProgressListener listener) {
         CollectResult result = new CollectResult();
         result.setTaskId(task.getId());
         result.setStartTime(LocalDateTime.now());
-        
+
+        notifyProgress(listener, 5, "校验数据源配置");
         DataSourceEntity ds = dataSourceService.getDataSource(task.getDataSourceId());
         if (ds == null) {
             result.setSuccess(false);
@@ -60,36 +69,63 @@ public class JdbcSchemaCollector {
 
         String url = buildJdbcUrl(ds);
         String password = stringEncryptor.decrypt(ds.getPasswordEncrypted());
-        
+
+        notifyProgress(listener, 10, "建立 JDBC 连接");
         try (Connection conn = DriverManager.getConnection(url, ds.getUsername(), password)) {
             DatabaseMetaData metaData = conn.getMetaData();
             
             // Get schemas to scan
+            notifyProgress(listener, 15, "解析目标 Schema");
             List<String> schemas = getTargetSchemas(task, metaData);
             result.setSchemasScanned(schemas.size());
             
-            for (String schema : schemas) {
+            for (int i = 0; i < schemas.size(); i++) {
+                String schema = schemas.get(i);
+                notifyProgress(listener, 15 + (int) Math.round(70.0 * i / Math.max(schemas.size(), 1)),
+                        "采集 Schema: " + schema + " (" + (i + 1) + "/" + schemas.size() + ")");
                 collectSchema(conn, metaData, schema, task, result);
             }
 
             // Auto-discover lineage edges (FK + view dependencies) after assets are registered
+            notifyProgress(listener, 88, "自动发现血缘关系");
             if (Boolean.TRUE.equals(task.getAutoDiscoverLineage())) {
                 discoverLineage(conn, metaData, ds, schemas, result);
             }
 
             // Refresh denormalized upstream/downstream counters so asset cards and
             // health scoring reflect the freshly rebuilt lineage graph.
+            notifyProgress(listener, 95, "刷新资产血缘计数");
             refreshAssetCounts();
 
             result.setSuccess(true);
+            notifyProgress(listener, 100, "采集完成");
         } catch (Exception e) {
             log.error("Collection failed for task: {}", task.getId(), e);
             result.setSuccess(false);
             result.setErrorMessage(e.getMessage());
+            notifyProgress(listener, 100, "采集失败: " + e.getMessage());
         }
         
         result.setEndTime(LocalDateTime.now());
         return result;
+    }
+
+    /** Best-effort progress notification; a failing listener never breaks collection. */
+    private void notifyProgress(ProgressListener listener, int percent, String phase) {
+        if (listener == null) {
+            return;
+        }
+        try {
+            listener.onProgress(percent, phase);
+        } catch (Exception e) {
+            log.debug("Progress listener failed: {}", e.getMessage());
+        }
+    }
+
+    /** Coarse-grained progress callback invoked during {@link #collect}. */
+    @FunctionalInterface
+    public interface ProgressListener {
+        void onProgress(int percent, String phase);
     }
 
     /**

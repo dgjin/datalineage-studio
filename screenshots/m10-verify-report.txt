@@ -1,0 +1,11 @@
+1. navigated to M10
+PASS  2. collection task panel title rendered
+PASS  3. three collect tasks rendered with run buttons
+PASS  4. task name rendered (dw_app task)
+PASS  5. data source name resolved from API
+PASS  6. SUCCESS badge rendered
+PASS  7. last run time shows today (10-06)
+PASS  8. run finished, success banner rendered (polled run-status)
+PASS  9. run button restored to idle
+PASS  10. refreshed last-run duration visible
+PASS  11. no console errors

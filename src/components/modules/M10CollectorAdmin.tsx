@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { CollectorAdapter } from '../../types/lineage';
 import { LayerImportPanel } from '../LayerImportPanel';
+import { collectorApi, datasourceApi } from '../../services/api';
 import { 
   Cpu, 
   CheckCircle2, 
@@ -14,17 +15,160 @@ import {
   Clock, 
   ArrowRight,
   Layers,
-  Database
+  Database,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 
 interface M10CollectorAdminProps {
   collectors: CollectorAdapter[];
 }
 
+interface CollectTask {
+  id: string;
+  taskName: string;
+  dataSourceId: string;
+  status: string;
+  scheduleCron?: string | null;
+  targetSchemas?: string[] | null;
+  lastRunAt?: string | null;
+  lastRunDuration?: number | null;
+  lastRunResult?: string | null;
+  totalTablesFound?: number | null;
+  totalColumnsFound?: number | null;
+  newAssetsRegistered?: number | null;
+}
+
+interface TaskRunState {
+  running: boolean;
+  percent: number;
+  phase: string;
+  elapsedMs: number;
+  finishedStatus?: string;
+}
+
+/** Exponential backoff for run-status polling: 1s -> 2s -> 5s -> 10s (then steady). */
+const POLL_DELAYS = [1000, 2000, 5000, 10000];
+
+const formatTime = (iso?: string | null) => {
+  if (!iso) return '—';
+  const d = new Date(String(iso).replace(' ', 'T'));
+  if (isNaN(d.getTime())) return String(iso).slice(0, 16).replace('T', ' ');
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const taskBadge = (status?: string) => {
+  switch (status) {
+    case 'SUCCESS': return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+    case 'RUNNING': return 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30 animate-pulse';
+    case 'FAILED': return 'bg-rose-500/20 text-rose-300 border-rose-500/30';
+    case 'PAUSED': return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+    default: return 'bg-slate-800 text-slate-300 border-slate-700';
+  }
+};
+
 export const M10CollectorAdmin: React.FC<M10CollectorAdminProps> = ({ collectors }) => {
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<'COLLECTORS' | 'LAYER_IMPORT' | 'METAMODEL'>('COLLECTORS');
+
+  // --- Real collection pipeline: task list + async run with polled progress ---
+  const [tasks, setTasks] = useState<CollectTask[]>([]);
+  const [dsNames, setDsNames] = useState<Record<string, string>>({});
+  const [runStates, setRunStates] = useState<Record<string, TaskRunState>>({});
+  const [taskError, setTaskError] = useState<string | null>(null);
+  const pollTimers = useRef<Record<string, number>>({});
+
+  const refreshTasks = useCallback(async () => {
+    try {
+      const list = await collectorApi.getTasks();
+      setTasks((list as CollectTask[]) || []);
+    } catch {
+      // backend offline: keep whatever was previously loaded
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshTasks();
+    datasourceApi.list().then((list: any[]) => {
+      const map: Record<string, string> = {};
+      (list || []).forEach((d: any) => { map[d.id] = d.name; });
+      setDsNames(map);
+    }).catch(() => {});
+    const timers = pollTimers.current;
+    return () => { Object.values(timers).forEach(t => window.clearTimeout(t)); };
+  }, [refreshTasks]);
+
+  const pollRunStatus = useCallback(async (taskId: string, step: number) => {
+    try {
+      const s = await collectorApi.getRunStatus(taskId);
+      if (s.running) {
+        setRunStates(prev => ({
+          ...prev,
+          [taskId]: {
+            running: true,
+            percent: s.percent ?? 0,
+            phase: s.phase || '采集中…',
+            elapsedMs: s.elapsedMs ?? 0,
+          },
+        }));
+        const next = Math.min(step + 1, POLL_DELAYS.length - 1);
+        pollTimers.current[taskId] = window.setTimeout(() => pollRunStatus(taskId, next), POLL_DELAYS[next]);
+      } else {
+        delete pollTimers.current[taskId];
+        setRunStates(prev => ({
+          ...prev,
+          [taskId]: {
+            running: false,
+            percent: s.percent ?? 100,
+            phase: s.phase || '采集完成',
+            elapsedMs: s.elapsedMs ?? 0,
+            finishedStatus: s.status,
+          },
+        }));
+        refreshTasks();
+      }
+    } catch {
+      // transient failure: keep backing off until the backend responds again
+      const next = Math.min(step + 1, POLL_DELAYS.length - 1);
+      pollTimers.current[taskId] = window.setTimeout(() => pollRunStatus(taskId, next), POLL_DELAYS[next]);
+    }
+  }, [refreshTasks]);
+
+  const handleRunTask = useCallback(async (taskId: string) => {
+    setTaskError(null);
+    try {
+      await collectorApi.runTask(taskId);
+      setRunStates(prev => ({
+        ...prev,
+        [taskId]: { running: true, percent: 0, phase: '任务已提交，等待执行', elapsedMs: 0 },
+      }));
+      if (pollTimers.current[taskId]) {
+        window.clearTimeout(pollTimers.current[taskId]);
+      }
+      pollTimers.current[taskId] = window.setTimeout(() => pollRunStatus(taskId, 0), POLL_DELAYS[0]);
+      refreshTasks();
+    } catch (e: any) {
+      setTaskError(e?.message || '触发采集失败');
+    }
+  }, [pollRunStatus, refreshTasks]);
+
+  // Local elapsed-time ticker while any run is in flight (polling backs off to 10s)
+  const anyRunning = Object.values(runStates).some(s => s.running);
+  useEffect(() => {
+    if (!anyRunning) return;
+    const timer = window.setInterval(() => {
+      setRunStates(prev => {
+        const next: Record<string, TaskRunState> = {};
+        Object.entries(prev).forEach(([k, v]) => {
+          next[k] = v.running ? { ...v, elapsedMs: v.elapsedMs + 1000 } : v;
+        });
+        return next;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [anyRunning]);
 
   const handleTestConnection = (id: string) => {
     setTestingId(id);
@@ -118,6 +262,140 @@ relationTypes:
 
       {activeTab === 'COLLECTORS' && (
         <div className="space-y-4">
+          {/* Real collection pipeline: trigger runs and poll live progress */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span className="flex items-center gap-1.5">
+                <Database className="w-3.5 h-3.5 text-indigo-400" />
+                采集任务（真实管道 · 异步执行 · 指数退避轮询 1s→2s→5s→10s）
+              </span>
+              <button
+                onClick={() => refreshTasks()}
+                className="flex items-center gap-1 px-2 py-1 rounded bg-slate-900 border border-slate-800 hover:border-slate-600 text-slate-300 transition"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>刷新</span>
+              </button>
+            </div>
+
+            {taskError && (
+              <div className="p-2.5 bg-rose-950/40 border border-rose-500/30 rounded-lg text-rose-300 text-xs flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <span>{taskError}</span>
+              </div>
+            )}
+
+            {tasks.length === 0 ? (
+              <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-500 text-center">
+                暂无采集任务（可在数据源管理中创建）或后端服务未连接
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {tasks.map(task => {
+                  const state = runStates[task.id];
+                  const running = !!state?.running;
+                  const finished = state?.finishedStatus;
+                  return (
+                    <div key={task.id} className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl space-y-3 text-xs">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-white text-[13px] truncate">{task.taskName}</h4>
+                          <span className="text-[10px] text-slate-400 font-mono block mt-0.5 truncate">
+                            {dsNames[task.dataSourceId] || (task.dataSourceId || '').slice(0, 12)}
+                            {task.targetSchemas && task.targetSchemas.length > 0 ? ` ｜ ${task.targetSchemas.join(', ')}` : ''}
+                          </span>
+                        </div>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono border shrink-0 ${taskBadge(task.status)}`}>
+                          {task.status}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 bg-slate-950 p-2 rounded-lg border border-slate-800 text-[10px]">
+                        <div>
+                          <span className="text-slate-400 block">扫描表 / 列</span>
+                          <span className="font-mono font-bold text-white">{task.totalTablesFound ?? 0} / {task.totalColumnsFound ?? 0}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block">新增资产</span>
+                          <span className="font-mono font-bold text-amber-400">{task.newAssetsRegistered ?? 0}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block">最近运行</span>
+                          <span className="font-mono font-bold text-slate-200">{formatTime(task.lastRunAt)}</span>
+                        </div>
+                      </div>
+
+                      {running && (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-[10px] gap-2">
+                            <span className="text-indigo-300 flex items-center gap-1 min-w-0">
+                              <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+                              <span className="truncate">{state?.phase}</span>
+                            </span>
+                            <span className="font-mono text-slate-400 shrink-0">
+                              {state?.percent ?? 0}% · {((state?.elapsedMs ?? 0) / 1000).toFixed(1)}s
+                            </span>
+                          </div>
+                          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-700"
+                              style={{ width: `${state?.percent ?? 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {!running && finished && (
+                        <div className={`p-2 rounded text-[10px] flex items-center gap-1.5 border ${
+                          finished === 'SUCCESS'
+                            ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
+                            : 'bg-rose-950/40 border-rose-500/30 text-rose-300'
+                        }`}>
+                          {finished === 'SUCCESS'
+                            ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            : <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
+                          <span>
+                            {finished === 'SUCCESS'
+                              ? `最近一次采集成功 ｜ 耗时 ${((state?.elapsedMs ?? 0) / 1000).toFixed(1)}s`
+                              : '最近一次采集失败，详见运行日志'}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-0.5 gap-2">
+                        <span className="text-[10px] font-mono text-slate-500 truncate">
+                          {task.scheduleCron ? `CRON ${task.scheduleCron}` : '手动触发'}
+                          {task.lastRunDuration != null ? ` ｜ 上次 ${task.lastRunDuration}ms` : ''}
+                        </span>
+                        <button
+                          onClick={() => handleRunTask(task.id)}
+                          disabled={running}
+                          className={`px-2.5 py-1 rounded flex items-center gap-1 font-medium transition shrink-0 ${
+                            running
+                              ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                              : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                          }`}
+                        >
+                          {running ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              <span>采集中</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-3 h-3" />
+                              <span>立即采集</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span>已注册 4 类主流采集模式 (Pull, Push, Scan) 适配器：</span>
             <span className="text-emerald-400 font-mono">健康度均值: 99%</span>

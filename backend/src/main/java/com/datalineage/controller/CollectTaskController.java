@@ -55,9 +55,15 @@ public class CollectTaskController {
     }
 
     @PostMapping("/{id}/run")
-    @Operation(summary = "手动触发采集")
+    @Operation(summary = "手动触发采集（异步，立即返回）")
     public ApiResponse<Map<String, Object>> runTask(@PathVariable String id) {
-        return ApiResponse.success(collectorService.runTask(id), "Collection completed");
+        return ApiResponse.success(collectorService.runTask(id), "Collection started");
+    }
+
+    @GetMapping("/{id}/run-status")
+    @Operation(summary = "获取采集运行状态（供前端轮询进度）")
+    public ApiResponse<Map<String, Object>> getRunStatus(@PathVariable String id) {
+        return ApiResponse.success(collectorService.getRunStatus(id));
     }
 
     @PostMapping("/{id}/pause")

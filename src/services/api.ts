@@ -326,6 +326,8 @@ export const collectorApi = {
     method: 'POST',
   }),
   
+  getRunStatus: (id: string) => apiFetch<any>(`/collect-tasks/${id}/run-status`),
+  
   pauseTask: (id: string) => apiFetch<any>(`/collect-tasks/${id}/pause`, {
     method: 'POST',
   }),

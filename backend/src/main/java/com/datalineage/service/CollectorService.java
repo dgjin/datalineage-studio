@@ -1,6 +1,7 @@
 package com.datalineage.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.datalineage.collector.JdbcSchemaCollector;
 import com.datalineage.entity.CollectorRunLogEntity;
 import com.datalineage.entity.MetadataCollectTaskEntity;
@@ -11,6 +12,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
@@ -36,9 +39,14 @@ public class CollectorService {
     private final MetadataCollectTaskMapper taskMapper;
     private final CollectorRunLogMapper runLogMapper;
     private final JdbcSchemaCollector jdbcSchemaCollector;
+    private final ThreadPoolTaskExecutor collectTaskExecutor;
 
     private ThreadPoolTaskScheduler scheduler;
     private final Map<String, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
+    /** Live progress of in-flight runs, keyed by task id (removed when a run ends). */
+    private final Map<String, LiveProgress> liveProgress = new ConcurrentHashMap<>();
+    /** Atomic per-task lock so overlapping triggers cannot start two runs at once. */
+    private final Set<String> runningTasks = ConcurrentHashMap.newKeySet();
 
     @PostConstruct
     public void initScheduler() {
@@ -46,11 +54,35 @@ public class CollectorService {
         scheduler.setPoolSize(4);
         scheduler.setThreadNamePrefix("collect-scheduler-");
         scheduler.initialize();
+        // A previous process may have died while a run was in flight; mark those
+        // stale RUNNING rows as failed so the UI never shows a zombie run.
+        cleanupStaleRuns();
         // Restore scheduled tasks from database
         for (MetadataCollectTaskEntity task : taskMapper.selectList(null)) {
             if (task.getScheduleCron() != null && !task.getScheduleCron().isEmpty()) {
                 scheduleTask(task);
             }
+        }
+    }
+
+    private void cleanupStaleRuns() {
+        try {
+            UpdateWrapper<CollectorRunLogEntity> logWrapper = new UpdateWrapper<>();
+            logWrapper.eq("status", "RUNNING");
+            CollectorRunLogEntity logPatch = new CollectorRunLogEntity();
+            logPatch.setStatus("FAILED");
+            logPatch.setEndTime(LocalDateTime.now());
+            logPatch.setErrors(List.of(Map.of("message", "服务重启中断了运行中的采集 (interrupted by restart)")));
+            runLogMapper.update(logPatch, logWrapper);
+
+            UpdateWrapper<MetadataCollectTaskEntity> taskWrapper = new UpdateWrapper<>();
+            taskWrapper.eq("status", "RUNNING");
+            MetadataCollectTaskEntity taskPatch = new MetadataCollectTaskEntity();
+            taskPatch.setStatus("PENDING");
+            taskPatch.setLastErrorMsg("服务重启中断了运行中的采集");
+            taskMapper.update(taskPatch, taskWrapper);
+        } catch (Exception e) {
+            log.warn("Stale RUNNING cleanup failed: {}", e.getMessage());
         }
     }
 
@@ -113,25 +145,79 @@ public class CollectorService {
     }
 
     /**
-     * Manually trigger a collection run (synchronous execution).
+     * Trigger a collection run. The run is submitted to the collect-task executor
+     * and this method returns immediately; callers poll {@link #getRunStatus} for
+     * progress and the final outcome.
      */
-    @Transactional
     public Map<String, Object> runTask(String id) {
+        return triggerRun(id, "MANUAL");
+    }
+
+    private Map<String, Object> triggerRun(String id, String runType) {
         MetadataCollectTaskEntity task = getTask(id);
+        // Atomic per-task lock: concurrent triggers race on runningTasks.add and
+        // exactly one wins; the DB status check additionally guards against stale
+        // RUNNING rows (crash leftovers) and runs owned by another instance.
+        if ("RUNNING".equals(task.getStatus()) || !runningTasks.add(id)) {
+            throw new BusinessException("采集任务正在运行中，请等待本次运行结束后再触发: " + id);
+        }
 
         CollectorRunLogEntity runLog = new CollectorRunLogEntity();
-        runLog.setTaskId(id);
-        runLog.setDataSourceId(task.getDataSourceId());
-        runLog.setRunType("MANUAL");
-        runLog.setStatus("RUNNING");
-        runLog.setStartTime(LocalDateTime.now());
-        runLogMapper.insert(runLog);
-
-        task.setStatus("RUNNING");
-        taskMapper.updateById(task);
-
         try {
-            JdbcSchemaCollector.CollectResult result = jdbcSchemaCollector.collect(task);
+            runLog.setTaskId(id);
+            runLog.setDataSourceId(task.getDataSourceId());
+            runLog.setRunType(runType);
+            runLog.setStatus("RUNNING");
+            runLog.setStartTime(LocalDateTime.now());
+            runLogMapper.insert(runLog);
+
+            task.setStatus("RUNNING");
+            taskMapper.updateById(task);
+
+            LiveProgress progress = new LiveProgress();
+            progress.setRunLogId(runLog.getId());
+            progress.setPercent(0);
+            progress.setPhase("任务已提交，等待执行");
+            progress.setStartedAt(runLog.getStartTime());
+            liveProgress.put(id, progress);
+
+            collectTaskExecutor.execute(() -> executeRun(id, runLog));
+        } catch (Exception e) {
+            // release the lock if submission failed before the run was scheduled
+            runningTasks.remove(id);
+            liveProgress.remove(id);
+            throw e;
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("accepted", true);
+        response.put("runLogId", runLog.getId());
+        response.put("status", "RUNNING");
+        response.put("message", "采集任务已异步启动，可轮询 run-status 获取进度");
+        return response;
+    }
+
+    /**
+     * Actual collection execution, running on the collect-task executor.
+     * No @Transactional here: a run performs many small writes over tens of seconds,
+     * each managed by the collector itself; a single wrapping transaction would hold
+     * locks for the whole run and hide intermediate state from the polling endpoint.
+     */
+    private void executeRun(String taskId, CollectorRunLogEntity runLog) {
+        MetadataCollectTaskEntity task = taskMapper.selectById(taskId);
+        if (task == null) {
+            liveProgress.remove(taskId);
+            log.warn("Collect task {} vanished before execution", taskId);
+            return;
+        }
+        try {
+            JdbcSchemaCollector.CollectResult result = jdbcSchemaCollector.collect(task, (percent, phase) -> {
+                LiveProgress p = liveProgress.get(taskId);
+                if (p != null) {
+                    p.setPercent(percent);
+                    p.setPhase(phase);
+                }
+            });
 
             LocalDateTime endTime = LocalDateTime.now();
             runLog.setEndTime(endTime);
@@ -159,22 +245,10 @@ public class CollectorService {
             task.setNewAssetsRegistered(result.getAssetsCreated());
             taskMapper.updateById(task);
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", result.isSuccess());
-            response.put("runLogId", runLog.getId());
-            response.put("tablesFound", result.getTablesFound());
-            response.put("columnsFound", result.getColumnsFound());
-            response.put("assetsCreated", result.getAssetsCreated());
-            response.put("assetsUpdated", result.getAssetsUpdated());
-            response.put("edgesDiscovered", result.getEdgesDiscovered());
-            response.put("changesDetected", result.getChangesDetected());
-            response.put("durationMs", runLog.getDurationMs());
-            if (!result.isSuccess()) {
-                response.put("error", result.getErrorMessage());
-            }
-            return response;
+            log.info("Collection run {} for task {} finished: success={}, tables={}, columns={}",
+                    runLog.getId(), taskId, result.isSuccess(), result.getTablesFound(), result.getColumnsFound());
         } catch (Exception e) {
-            log.error("Manual run failed for task: {}", id, e);
+            log.error("Collection run failed for task: {}", taskId, e);
             runLog.setEndTime(LocalDateTime.now());
             runLog.setDurationMs(Duration.between(runLog.getStartTime(), runLog.getEndTime()).toMillis());
             runLog.setStatus("FAILED");
@@ -185,12 +259,73 @@ public class CollectorService {
             task.setLastRunAt(runLog.getStartTime());
             task.setLastErrorMsg(e.getMessage());
             taskMapper.updateById(task);
-            throw new BusinessException("Collection run failed: " + e.getMessage());
+        } finally {
+            liveProgress.remove(taskId);
+            runningTasks.remove(taskId);
         }
+    }
+
+    /**
+     * Poll payload: live progress while running, otherwise the outcome of the most
+     * recent run so the UI can render the final state after polling stops.
+     */
+    public Map<String, Object> getRunStatus(String id) {
+        MetadataCollectTaskEntity task = getTask(id);
+        LiveProgress progress = liveProgress.get(id);
+        boolean running = progress != null;
+
+        List<CollectorRunLogEntity> logs = runLogMapper.findByTaskId(id, 1);
+        CollectorRunLogEntity lastRun = logs.isEmpty() ? null : logs.get(0);
+
+        Map<String, Object> status = new HashMap<>();
+        status.put("taskId", id);
+        status.put("taskName", task.getTaskName());
+        status.put("dataSourceId", task.getDataSourceId());
+        status.put("status", task.getStatus());
+        status.put("running", running);
+        if (running) {
+            status.put("percent", progress.getPercent());
+            status.put("phase", progress.getPhase());
+            status.put("elapsedMs", Duration.between(progress.getStartedAt(), LocalDateTime.now()).toMillis());
+            status.put("runLogId", progress.getRunLogId());
+        } else if (lastRun != null && "SUCCESS".equals(lastRun.getStatus())) {
+            status.put("percent", 100);
+            status.put("phase", "采集完成");
+            status.put("elapsedMs", lastRun.getDurationMs());
+            status.put("runLogId", lastRun.getId());
+        } else {
+            status.put("percent", 0);
+            status.put("phase", lastRun == null ? "尚未执行" : "采集失败");
+            status.put("elapsedMs", lastRun == null ? 0L : lastRun.getDurationMs());
+            status.put("runLogId", lastRun == null ? null : lastRun.getId());
+        }
+
+        if (lastRun != null) {
+            Map<String, Object> lr = new HashMap<>();
+            lr.put("id", lastRun.getId());
+            lr.put("status", lastRun.getStatus());
+            lr.put("startTime", lastRun.getStartTime());
+            lr.put("durationMs", lastRun.getDurationMs());
+            lr.put("tablesScanned", lastRun.getTablesScanned());
+            lr.put("columnsScanned", lastRun.getColumnsScanned());
+            lr.put("assetsCreated", lastRun.getAssetsCreated());
+            lr.put("assetsUpdated", lastRun.getAssetsUpdated());
+            lr.put("edgesDiscovered", lastRun.getEdgesDiscovered());
+            status.put("lastRun", lr);
+        }
+        status.put("totalTablesFound", task.getTotalTablesFound());
+        status.put("totalColumnsFound", task.getTotalColumnsFound());
+        status.put("newAssetsRegistered", task.getNewAssetsRegistered());
+        status.put("lastRunAt", task.getLastRunAt());
+        status.put("lastErrorMsg", task.getLastErrorMsg());
+        return status;
     }
 
     public MetadataCollectTaskEntity pauseTask(String id) {
         MetadataCollectTaskEntity task = getTask(id);
+        if (runningTasks.contains(id) || "RUNNING".equals(task.getStatus())) {
+            throw new BusinessException("采集任务运行中，无法暂停: " + id);
+        }
         cancelSchedule(id);
         task.setStatus("PAUSED");
         taskMapper.updateById(task);
@@ -222,7 +357,7 @@ public class CollectorService {
             ScheduledFuture<?> future = scheduler.schedule(() -> {
                 try {
                     log.info("Scheduled collection triggered for task: {}", task.getId());
-                    runTask(task.getId());
+                    triggerRun(task.getId(), "SCHEDULED");
                 } catch (Exception e) {
                     log.error("Scheduled collection failed for task: {}", task.getId(), e);
                 }
@@ -242,6 +377,15 @@ public class CollectorService {
         if (future != null) {
             future.cancel(false);
         }
+    }
+
+    /** Mutable progress snapshot for an in-flight run, read by the polling endpoint. */
+    @lombok.Data
+    private static class LiveProgress {
+        private Long runLogId;
+        private int percent;
+        private String phase;
+        private LocalDateTime startedAt;
     }
 
     private String buildRunSummary(JdbcSchemaCollector.CollectResult result) {
