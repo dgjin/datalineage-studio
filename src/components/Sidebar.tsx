@@ -32,6 +32,7 @@ export type NavTab =
   | 'collectors'
   | 'datasources'
   | 'standards'
+  | 'models'
   | 'help';
 
 interface SidebarProps {
@@ -63,6 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'collectors' as NavTab, label: 'M10 采集与管理', icon: Cpu, badge: null },
     { id: 'datasources' as NavTab, label: 'M11 数据源接入', icon: Server, badge: 'New', badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' },
     { id: 'standards' as NavTab, label: 'M12 标准中枢', icon: BookOpen, badge: 'New', badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' },
+    { id: 'models' as NavTab, label: 'M13 数据模型', icon: Database, badge: 'New', badgeColor: 'bg-violet-500/20 text-violet-300 border-violet-500/30' },
     { id: 'help' as NavTab, label: '帮助中心', icon: LifeBuoy, badge: '指南', badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
   ];
 

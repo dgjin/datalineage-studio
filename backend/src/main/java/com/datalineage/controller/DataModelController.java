@@ -1,0 +1,72 @@
+package com.datalineage.controller;
+
+import com.datalineage.dto.ApiResponse;
+import com.datalineage.entity.DataModelEntity;
+import com.datalineage.entity.DataModelTableEntity;
+import com.datalineage.service.DataModelService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/models")
+@RequiredArgsConstructor
+@Tag(name = "数据模型前置管理", description = "ERMaster 设计模型导入、与实际库对比、影响评估")
+public class DataModelController {
+
+    private final DataModelService dataModelService;
+
+    @PostMapping("/import")
+    @Operation(summary = "导入 ERMaster 模型文件")
+    public ApiResponse<DataModelEntity> importModel(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("name") String name,
+            @RequestParam(value = "targetLayer", defaultValue = "ODS") String targetLayer,
+            @RequestParam(value = "targetDataSourceId", required = false) String targetDataSourceId,
+            @RequestParam(value = "createdBy", required = false) String createdBy) {
+        try {
+            String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
+            DataModelEntity model = dataModelService.importModel(
+                    name, file.getOriginalFilename(), xmlContent, targetLayer, targetDataSourceId, createdBy);
+            return ApiResponse.success(model, "Model imported successfully");
+        } catch (IOException e) {
+            return ApiResponse.error(500, "Failed to read uploaded file: " + e.getMessage());
+        }
+    }
+
+    @GetMapping
+    @Operation(summary = "获取数据模型列表")
+    public ApiResponse<List<DataModelEntity>> listModels() {
+        return ApiResponse.success(dataModelService.listModels());
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "获取数据模型详情")
+    public ApiResponse<DataModelEntity> getModel(@PathVariable String id) {
+        DataModelEntity model = dataModelService.getModel(id);
+        if (model == null) {
+            return ApiResponse.error(404, "Data model not found");
+        }
+        return ApiResponse.success(model);
+    }
+
+    @GetMapping("/{id}/tables")
+    @Operation(summary = "获取模型表结构明细")
+    public ApiResponse<List<DataModelTableEntity>> listModelTables(@PathVariable String id) {
+        return ApiResponse.success(dataModelService.listModelTables(id));
+    }
+
+    @GetMapping("/{id}/diff")
+    @Operation(summary = "模型与实际 ODS 库对比（含自动影响评估）")
+    public ApiResponse<Map<String, Object>> compareWithDataSource(@PathVariable String id) {
+        Map<String, Object> report = dataModelService.compareWithDataSource(id);
+        return ApiResponse.success(report);
+    }
+}

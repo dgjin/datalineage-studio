@@ -458,6 +458,27 @@ export const approvalApi = {
     }),
 };
 
+// Data Model Baseline API (M13)
+export const modelApi = {
+  import: (formData: FormData) => {
+    const url = `${API_BASE}/models/import`;
+    return fetch(url, { method: 'POST', body: formData }).then(async res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (json.code !== 200) throw new Error(json.message || 'Import failed');
+      return json.data;
+    });
+  },
+
+  list: () => apiFetch<any[]>('/models'),
+
+  get: (id: string) => apiFetch<any>(`/models/${id}`),
+
+  listTables: (id: string) => apiFetch<any[]>(`/models/${id}/tables`),
+
+  diff: (id: string) => apiFetch<any>(`/models/${id}/diff`),
+};
+
 export default {
   asset: assetApi,
   lineage: lineageApi,
@@ -472,4 +493,5 @@ export default {
   dashboard: dashboardApi,
   standard: standardApi,
   approval: approvalApi,
+  model: modelApi,
 };
