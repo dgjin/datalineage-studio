@@ -36,6 +36,8 @@ export const M13DataModelHub: React.FC = () => {
   const [diffReport, setDiffReport] = useState<any | null>(null);
   const [diffLoading, setDiffLoading] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [diffKeyword, setDiffKeyword] = useState('');
+  const [diffTypeFilter, setDiffTypeFilter] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Import form state
@@ -112,6 +114,25 @@ export const M13DataModelHub: React.FC = () => {
   };
 
   const selectedModel = models.find(m => m.id === selectedModelId);
+
+  /** Filtered differences for the DIFF tab: keyword + type filter. */
+  const filteredDifferences = (() => {
+    if (!diffReport) return [];
+    let list = diffReport.differences;
+    if (diffTypeFilter) {
+      list = list.filter((d: any) => d.diffType === diffTypeFilter);
+    }
+    if (diffKeyword.trim()) {
+      const kw = diffKeyword.trim().toLowerCase();
+      list = list.filter((d: any) =>
+        d.tableName.toLowerCase().includes(kw) ||
+        (d.columnName && d.columnName.toLowerCase().includes(kw)) ||
+        d.diffType.toLowerCase().includes(kw) ||
+        (d.message && d.message.toLowerCase().includes(kw))
+      );
+    }
+    return list;
+  })();
 
   const diffTypeBadge = (type: string) => {
     switch (type) {
@@ -380,12 +401,83 @@ export const M13DataModelHub: React.FC = () => {
 
                 {/* Diff table */}
                 <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-white flex items-center gap-2">
-                      <GitCompare className="w-4 h-4 text-violet-400" />
-                      <span>差异明细 — {diffReport.modelName} vs {diffReport.dataSourceName} ({diffReport.targetLayer})</span>
-                    </h3>
-                    <span className="text-[10px] text-slate-500 font-mono">{diffReport.comparedAt}</span>
+                  <div className="px-4 py-3 border-b border-slate-800 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-white flex items-center gap-2">
+                        <GitCompare className="w-4 h-4 text-violet-400" />
+                        <span>差异明细 — {diffReport.modelName} vs {diffReport.dataSourceName} ({diffReport.targetLayer})</span>
+                      </h3>
+                      <span className="text-[10px] text-slate-500 font-mono">{diffReport.comparedAt}</span>
+                    </div>
+
+                    {/* Search & filter bar */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="relative flex-1 min-w-[200px]">
+                        <input
+                          type="text"
+                          value={diffKeyword}
+                          onChange={e => setDiffKeyword(e.target.value)}
+                          placeholder="搜索表名、字段名、差异类型或说明..."
+                          className="w-full px-3 py-1.5 pl-8 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                        />
+                        <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        {diffKeyword && (
+                          <button
+                            onClick={() => setDiffKeyword('')}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Type filter chips */}
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <button
+                          onClick={() => setDiffTypeFilter(null)}
+                          className={`px-2 py-1 rounded-md text-[10px] font-medium transition ${
+                            !diffTypeFilter ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          全部 ({diffReport.differences.length})
+                        </button>
+                        {[
+                          { key: 'MISSING_IN_ODS', label: '表缺失' },
+                          { key: 'EXTRA_IN_ODS', label: '表多余' },
+                          { key: 'COLUMN_MISSING', label: '字段缺失' },
+                          { key: 'COLUMN_EXTRA_IN_ODS', label: '字段多余' },
+                          { key: 'COLUMN_TYPE_MISMATCH', label: '类型不一致' },
+                          { key: 'COLUMN_NULLABILITY_MISMATCH', label: '可空性不一致' },
+                        ].map(f => {
+                          const count = diffReport.differences.filter((d: any) => d.diffType === f.key).length;
+                          if (count === 0) return null;
+                          return (
+                            <button
+                              key={f.key}
+                              onClick={() => setDiffTypeFilter(diffTypeFilter === f.key ? null : f.key)}
+                              className={`px-2 py-1 rounded-md text-[10px] font-medium transition ${
+                                diffTypeFilter === f.key ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                              }`}
+                            >
+                              {f.label} ({count})
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Filter result hint */}
+                    {(diffKeyword || diffTypeFilter) && (
+                      <div className="text-[10px] text-slate-500">
+                        筛选结果: {filteredDifferences.length} / {diffReport.differences.length} 条
+                        {diffKeyword && <span className="ml-2">关键字: "{diffKeyword}"</span>}
+                        {diffTypeFilter && <span className="ml-2">类型: {diffTypeFilter}</span>}
+                      </div>
+                    )}
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs">
@@ -400,23 +492,31 @@ export const M13DataModelHub: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {diffReport.differences.map((d: any, i: number) => {
-                          const badge = diffTypeBadge(d.diffType);
-                          return (
-                            <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
-                              <td className="px-4 py-2 font-mono text-white">{d.tableName}</td>
-                              <td className="px-4 py-2 font-mono text-slate-300">{d.columnName || '-'}</td>
-                              <td className="px-4 py-2">
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${badge.cls}`}>
-                                  {badge.label}
-                                </span>
-                              </td>
-                              <td className="px-4 py-2 font-mono text-slate-400">{d.modelValue || '-'}</td>
-                              <td className="px-4 py-2 font-mono text-slate-400">{d.actualValue || '-'}</td>
-                              <td className="px-4 py-2 text-slate-400">{d.message}</td>
-                            </tr>
-                          );
-                        })}
+                        {filteredDifferences.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="px-4 py-8 text-center text-slate-500 text-xs">
+                              无匹配的差异项，请调整搜索关键字或筛选条件
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredDifferences.map((d: any, i: number) => {
+                            const badge = diffTypeBadge(d.diffType);
+                            return (
+                              <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
+                                <td className="px-4 py-2 font-mono text-white">{d.tableName}</td>
+                                <td className="px-4 py-2 font-mono text-slate-300">{d.columnName || '-'}</td>
+                                <td className="px-4 py-2">
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded border ${badge.cls}`}>
+                                    {badge.label}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-2 font-mono text-slate-400">{d.modelValue || '-'}</td>
+                                <td className="px-4 py-2 font-mono text-slate-400">{d.actualValue || '-'}</td>
+                                <td className="px-4 py-2 text-slate-400">{d.message}</td>
+                              </tr>
+                            );
+                          })
+                        )}
                       </tbody>
                     </table>
                   </div>
