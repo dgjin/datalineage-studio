@@ -1,0 +1,8 @@
+datalineage_assets_total{application="datalineage-studio",} 34.0
+datalineage_changes_pending_approval{application="datalineage-studio",} 0.0
+datalineage_collector_run_duration_seconds_count{application="datalineage-studio",} 2.0
+datalineage_collector_run_duration_seconds_max{application="datalineage-studio",} 0.141
+datalineage_collector_run_duration_seconds_sum{application="datalineage-studio",} 0.233
+datalineage_collector_runs_total{application="datalineage-studio",status="success",} 2.0
+datalineage_lineage_edges_total{application="datalineage-studio",} 124.0
+datalineage_validation_open_issues{application="datalineage-studio",} 4.0

@@ -76,6 +76,22 @@ app:
     secret: ${JWT_SECRET:DataLineageStudio-JwtSecret-2026-ChangeMeInProduction-0123456789abcdef}
     expiry-hours: 8
 
+# Actuator / Micrometer (Prometheus monitoring)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never
+  metrics:
+    tags:
+      application: datalineage-studio
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
 # Custom Application Configuration
 datalineage:
   collector:

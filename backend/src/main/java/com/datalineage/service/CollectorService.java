@@ -8,6 +8,7 @@ import com.datalineage.entity.MetadataCollectTaskEntity;
 import com.datalineage.exception.BusinessException;
 import com.datalineage.mapper.CollectorRunLogMapper;
 import com.datalineage.mapper.MetadataCollectTaskMapper;
+import com.datalineage.metrics.GovernanceMetrics;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,7 @@ public class CollectorService {
     private final CollectorRunLogMapper runLogMapper;
     private final JdbcSchemaCollector jdbcSchemaCollector;
     private final ThreadPoolTaskExecutor collectTaskExecutor;
+    private final GovernanceMetrics governanceMetrics;
 
     private ThreadPoolTaskScheduler scheduler;
     private final Map<String, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
@@ -244,6 +246,7 @@ public class CollectorService {
             task.setTotalColumnsFound(result.getColumnsFound());
             task.setNewAssetsRegistered(result.getAssetsCreated());
             taskMapper.updateById(task);
+            governanceMetrics.recordCollectorRun(true, runLog.getDurationMs(), result.getEdgesDiscovered());
 
             log.info("Collection run {} for task {} finished: success={}, tables={}, columns={}",
                     runLog.getId(), taskId, result.isSuccess(), result.getTablesFound(), result.getColumnsFound());
@@ -259,6 +262,7 @@ public class CollectorService {
             task.setLastRunAt(runLog.getStartTime());
             task.setLastErrorMsg(e.getMessage());
             taskMapper.updateById(task);
+            governanceMetrics.recordCollectorRun(false, runLog.getDurationMs(), 0);
         } finally {
             liveProgress.remove(taskId);
             runningTasks.remove(taskId);

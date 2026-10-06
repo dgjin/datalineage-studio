@@ -6,6 +6,7 @@ import com.datalineage.entity.ChangeEventEntity;
 import com.datalineage.exception.BusinessException;
 import com.datalineage.mapper.ApprovalRecordMapper;
 import com.datalineage.mapper.ChangeEventMapper;
+import com.datalineage.metrics.GovernanceMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class ApprovalService {
     private final ChangeEventMapper changeEventMapper;
     private final ApprovalRecordMapper approvalRecordMapper;
     private final NotificationService notificationService;
+    private final GovernanceMetrics governanceMetrics;
 
     /**
      * Auto-trigger the approval gate for high-risk managed changes.
@@ -111,6 +113,7 @@ public class ApprovalService {
         record.setComment(comment);
         record.setDecidedAt(LocalDateTime.now());
         approvalRecordMapper.insert(record);
+        governanceMetrics.recordApprovalDecision(action, change.getCreatedAt());
 
         boolean approved = "APPROVE".equals(action);
         notificationService.createNotification(

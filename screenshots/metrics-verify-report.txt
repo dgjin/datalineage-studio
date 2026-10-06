@@ -1,0 +1,16 @@
+PASS  1. /actuator/health -> 200 UP
+PASS  2. /actuator/prometheus -> 200 without token
+PASS  3. application tag present
+PASS  4. HTTP server meters present (API response time)
+PASS  5. latency histogram enabled
+PASS  6. JVM meters present
+PASS  7. gauge datalineage_assets_total = 34 (>0)
+PASS  8. gauge datalineage_lineage_edges_total = 124 (>0)
+PASS  9. gauge datalineage_validation_open_issues = 4 (>=0)
+PASS  10. gauge datalineage_changes_pending_approval = 0 (>=0)
+PASS  11. admin triggers a collection run (200)
+PASS  12. collection run finished
+PASS  13. datalineage_collector_runs_total increased (0 -> 1)
+PASS  14. runs tagged by status (success/failed)
+PASS  15. collector.run.duration timer recorded
+PASS  16. write without token still 401 (RBAC intact)
