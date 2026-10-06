@@ -18,6 +18,17 @@ const ok = (name, cond) => { log((cond ? 'PASS  ' : 'FAIL  ') + name); return co
 const browser = await chromium.launch({ executablePath: EXE, headless: true });
 const page = await browser.newPage({ viewport: { width: 1680, height: 1050 } });
 
+// RBAC (P2-8): inject an admin session so the AuthGuard admits the app shell
+const loginRes = await fetch('http://localhost:8080/api/v1/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username: 'admin', password: 'admin123' }),
+});
+const authData = (await loginRes.json()).data;
+await page.addInitScript((state) => {
+  try { window.localStorage.setItem('dl_auth', state); } catch { /* ignore */ }
+}, JSON.stringify({ token: authData.token, user: authData.user, expiresAt: Date.now() + authData.expiresInMs }));
+
 const consoleErrors = [];
 page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
 page.on('pageerror', (e) => consoleErrors.push('PAGEERROR: ' + e.message));

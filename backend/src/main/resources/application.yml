@@ -70,6 +70,12 @@ jasypt:
     algorithm: PBEWithMD5AndDES
     iv-generator-classname: org.jasypt.iv.NoIvGenerator
 
+# JWT Authentication
+app:
+  jwt:
+    secret: ${JWT_SECRET:DataLineageStudio-JwtSecret-2026-ChangeMeInProduction-0123456789abcdef}
+    expiry-hours: 8
+
 # Custom Application Configuration
 datalineage:
   collector:

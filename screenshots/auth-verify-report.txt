@@ -1,0 +1,25 @@
+PASS  A1. admin login -> 200 + 8h token
+PASS  A2. admin role ADMIN (林浩然)
+PASS  A3. governor login -> 200 (GOVERNOR)
+PASS  A4. viewer login -> 200 (VIEWER)
+PASS  A5. wrong password rejected (400)
+PASS  A6. write without token -> 401
+PASS  A7. viewer write -> 403
+PASS  A8. governor write -> 200
+PASS  A9. admin write -> 200
+PASS  A10. GET stays public -> 200
+PASS  B1. login gate renders for anonymous visitor
+PASS  B2. three demo accounts offered
+PASS  B3. viewer enters the app shell
+PASS  B4. viewer session badge in header
+PASS  B5. viewer sees exactly 3 locked run buttons
+PASS  B6. locked button is disabled
+PASS  B7. viewer write via browser context -> 403
+PASS  B8. logout returns to the login gate
+PASS  B9. admin enters the app shell
+PASS  B10. admin session badge in header
+PASS  B11. admin sees exactly 3 enabled run buttons
+PASS  B12. run button enabled for admin
+PASS  B13. admin write via browser context -> 200
+PASS  B14. tampered token rejected by /auth/me -> 401
+PASS  C1. no console errors

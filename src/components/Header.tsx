@@ -12,9 +12,12 @@ import {
   FileCode2,
   Sliders,
   CheckCircle2,
-  ChevronDown
+  ChevronDown,
+  LogOut
 } from 'lucide-react';
 import { UserRole, NotificationItem } from '../types/lineage';
+import { ROLE_LABELS } from './AuthGuard';
+import type { AuthUser } from '../services/api';
 
 interface HeaderProps {
   currentSpace: string;
@@ -28,6 +31,8 @@ interface HeaderProps {
   notifications: NotificationItem[];
   onOpenNotifications: () => void;
   onOpenDesignDoc: () => void;
+  authUser?: AuthUser | null;
+  onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -41,9 +46,12 @@ export const Header: React.FC<HeaderProps> = ({
   timeTravelDate,
   notifications,
   onOpenNotifications,
-  onOpenDesignDoc
+  onOpenDesignDoc,
+  authUser,
+  onLogout
 }) => {
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const [authMenuOpen, setAuthMenuOpen] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const roleLabels: Record<UserRole, { title: string; color: string }> = {
@@ -146,7 +154,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </button>
 
-        {/* User Role Switcher */}
+        {/* User Role Switcher (demo persona switcher) */}
         <div className="relative">
           <button 
             onClick={() => setRoleMenuOpen(!roleMenuOpen)}
@@ -180,6 +188,46 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
         </div>
+
+        {/* Real logged-in user badge (JWT session) */}
+        {authUser && (
+          <div className="relative">
+            <button
+              onClick={() => { setAuthMenuOpen(!authMenuOpen); setRoleMenuOpen(false); }}
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border transition ${ROLE_LABELS[authUser.role].color}`}
+              title={`已登录：@${authUser.username}`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span className="font-medium max-w-[96px] truncate">{authUser.displayName}</span>
+              <span className="opacity-75 hidden xl:inline">· {ROLE_LABELS[authUser.role].title}</span>
+              <ChevronDown className="w-3 h-3 opacity-70" />
+            </button>
+
+            {authMenuOpen && (
+              <div className="absolute right-0 mt-1.5 w-60 rounded-lg bg-slate-900 border border-slate-800 shadow-xl py-1 z-50">
+                <div className="px-2.5 py-1 text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
+                  已登录账号 (JWT)
+                </div>
+                <div className="px-2.5 py-2">
+                  <div className="text-xs font-medium text-slate-200">{authUser.displayName}</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    @{authUser.username} · {ROLE_LABELS[authUser.role].title}
+                    {authUser.role === 'VIEWER' && ' · 写操作只读拦截'}
+                  </div>
+                </div>
+                <div className="border-t border-slate-800 mt-1 pt-1">
+                  <button
+                    onClick={() => { setAuthMenuOpen(false); onLogout?.(); }}
+                    className="w-full text-left px-2.5 py-1.5 text-xs flex items-center gap-2 text-rose-300 hover:bg-rose-500/10 transition"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>退出登录</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

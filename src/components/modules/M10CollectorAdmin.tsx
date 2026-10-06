@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { CollectorAdapter } from '../../types/lineage';
 import { LayerImportPanel } from '../LayerImportPanel';
 import { collectorApi, datasourceApi } from '../../services/api';
+import { useAuth, canWrite } from '../AuthGuard';
 import { 
   Cpu, 
   CheckCircle2, 
@@ -17,7 +18,8 @@ import {
   Layers,
   Database,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Lock
 } from 'lucide-react';
 
 interface M10CollectorAdminProps {
@@ -69,6 +71,8 @@ const taskBadge = (status?: string) => {
 };
 
 export const M10CollectorAdmin: React.FC<M10CollectorAdminProps> = ({ collectors }) => {
+  const auth = useAuth();
+  const writable = canWrite(auth);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<'COLLECTORS' | 'LAYER_IMPORT' | 'METAMODEL'>('COLLECTORS');
@@ -369,9 +373,10 @@ relationTypes:
                         </span>
                         <button
                           onClick={() => handleRunTask(task.id)}
-                          disabled={running}
+                          disabled={running || !writable}
+                          title={!writable ? '只读角色（VIEWER）无权触发采集，请以管理员身份登录' : undefined}
                           className={`px-2.5 py-1 rounded flex items-center gap-1 font-medium transition shrink-0 ${
-                            running
+                            running || !writable
                               ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                               : 'bg-indigo-600 hover:bg-indigo-500 text-white'
                           }`}
@@ -380,6 +385,11 @@ relationTypes:
                             <>
                               <Loader2 className="w-3 h-3 animate-spin" />
                               <span>采集中</span>
+                            </>
+                          ) : !writable ? (
+                            <>
+                              <Lock className="w-3 h-3" />
+                              <span>只读</span>
                             </>
                           ) : (
                             <>

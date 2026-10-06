@@ -5,20 +5,46 @@
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
-// Generic fetch wrapper with error handling
+// --- Auth token storage (shared with AuthGuard via localStorage) ---
+export const AUTH_STORAGE_KEY = 'dl_auth';
+
+export interface AuthUser {
+  username: string;
+  displayName: string;
+  role: 'ADMIN' | 'GOVERNOR' | 'VIEWER';
+}
+
+export function getAuthToken(): string | null {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    return raw ? JSON.parse(raw).token : null;
+  } catch {
+    return null;
+  }
+}
+
+// Generic fetch wrapper with auth header, 401 broadcast and error handling
 async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
+  const token = getAuthToken();
   
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
     ...options,
   });
+
+  if (response.status === 401 && !endpoint.startsWith('/auth/login')) {
+    // Session expired or missing: drop the stale token and let AuthGuard react
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    window.dispatchEvent(new Event('auth:unauthorized'));
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Network error' }));
@@ -28,6 +54,17 @@ async function apiFetch<T>(
   const data = await response.json();
   return data.data || data;
 }
+
+// Auth API
+export const authApi = {
+  login: (username: string, password: string) =>
+    apiFetch<{ token: string; expiresInMs: number; user: AuthUser }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    }),
+
+  me: () => apiFetch<AuthUser>('/auth/me'),
+};
 
 // Asset API
 export const assetApi = {
@@ -475,7 +512,17 @@ export const approvalApi = {
 export const modelApi = {
   import: (formData: FormData) => {
     const url = `${API_BASE}/models/import`;
-    return fetch(url, { method: 'POST', body: formData }).then(async res => {
+    const token = getAuthToken();
+    return fetch(url, {
+      method: 'POST',
+      body: formData,
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    }).then(async res => {
+      if (res.status === 401) {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        window.dispatchEvent(new Event('auth:unauthorized'));
+        throw new Error('登录已过期，请重新登录');
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (json.code !== 200) throw new Error(json.message || 'Import failed');
@@ -493,6 +540,7 @@ export const modelApi = {
 };
 
 export default {
+  auth: authApi,
   asset: assetApi,
   lineage: lineageApi,
   datasource: datasourceApi,

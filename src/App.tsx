@@ -35,9 +35,11 @@ import {
 import { useLineageStore } from './stores/lineageStore';
 import { adaptAsset, adaptEdge, adaptChange, adaptMetric } from './services/adapters';
 import { ruleApi, notificationApi, metricApi, contractApi } from './services/api';
+import { AuthGuard, useAuth, logout } from './components/AuthGuard';
 import { UserRole, ValidationRule, QualityIssue, NotificationItem, MetricDefinition, ContractFile } from './types/lineage';
 
-export default function App() {
+function AppShell() {
+  const auth = useAuth();
   const [activeTab, setActiveTab] = useState<NavTab>('workbench');
   const [currentSpace, setCurrentSpace] = useState<string>('all');
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('ARCHITECT');
@@ -220,6 +222,8 @@ export default function App() {
         notifications={notifications}
         onOpenNotifications={() => setActiveTab('inbox')}
         onOpenDesignDoc={() => setIsDesignDocOpen(true)}
+        authUser={auth?.user}
+        onLogout={logout}
       />
 
       {/* Main Body */}
@@ -380,5 +384,14 @@ export default function App() {
         onClose={() => setIsDesignDocOpen(false)}
       />
     </div>
+  );
+}
+
+/** Entry: hard-gates the shell behind a valid JWT session (login screen otherwise). */
+export default function App() {
+  return (
+    <AuthGuard>
+      <AppShell />
+    </AuthGuard>
   );
 }
