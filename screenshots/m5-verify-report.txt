@@ -1,0 +1,13 @@
+1. navigated to M5
+PASS  2. real metric count badge (6 项治理指标)
+PASS  3. real metric MET-TRD-GMV-001 visible
+PASS  4. real metric MET-CRM-VIP-002 visible
+PASS  5. detail pane renders caliber card (SUM(gmv))
+PASS  6. physical column mapping shows real column gmv
+PASS  7. real column binding asset dws_order_metrics rendered
+PASS  8. real history version v1.2 rendered
+PASS  9. breaking-history-data badge rendered
+PASS  10. MISSING_CODE filter keeps unbound metric & hides bound ones
+PASS  11. COMPOSITE_DAG filter keeps composite metric & hides atomic ones
+PASS  12. explore lineage shows metric asset in M2 graph
+PASS  13. no console errors

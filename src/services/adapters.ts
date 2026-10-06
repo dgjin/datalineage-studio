@@ -3,7 +3,7 @@
  * The Spring Boot API returns entity shapes (fromAssetId/toAssetId, flat affected* counters),
  * while UI components consume the richer frontend types. Keep the mapping in one place.
  */
-import type { Asset, LineageEdge, ChangeEvent } from '../types/lineage';
+import type { Asset, LineageEdge, ChangeEvent, MetricDefinition } from '../types/lineage';
 
 export function adaptAsset(a: any): Asset {
   return {
@@ -73,5 +73,29 @@ export function adaptChange(c: any): ChangeEvent {
       apis: c.affectedApis ?? 0,
       tables: c.affectedTables ?? 0,
     },
+  };
+}
+
+export function adaptMetric(m: any): MetricDefinition {
+  return {
+    code: m.code,
+    name: m.name ?? m.code,
+    type: m.type ?? 'ATOMIC',
+    caliberSummary: m.caliberSummary ?? '',
+    entity: m.entity ?? '',
+    measureExpr: m.measureExpr ?? '',
+    filterConditions: m.filterConditions ?? [],
+    dimensions: m.dimensions ?? [],
+    unit: m.unit ?? '',
+    calcType: m.calcType ?? 'PERIOD',
+    frequency: m.frequency ?? 'DAILY',
+    caliberSystem: m.caliberSystem ?? 'INTERNAL',
+    owner: m.owner ?? '未指定',
+    status: m.status ?? 'DRAFT',
+    version: m.version ?? 'v1.0',
+    upstreamMetrics: m.upstreamMetrics ?? undefined,
+    referencedColumns: m.referencedColumns ?? [],
+    downstreamReports: m.downstreamReports ?? [],
+    lastModified: String(m.lastModified ?? '').replace('T', ' ').slice(0, 16),
   };
 }

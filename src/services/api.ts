@@ -180,6 +180,8 @@ export const metricApi = {
     method: 'PUT',
     body: JSON.stringify(metric),
   }),
+
+  history: (code: string) => apiFetch<any[]>(`/metrics/${code}/history`),
 };
 
 // Change Event API

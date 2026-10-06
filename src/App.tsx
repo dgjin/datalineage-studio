@@ -33,9 +33,9 @@ import {
   INITIAL_NOTIFICATIONS
 } from './mock/mockData';
 import { useLineageStore } from './stores/lineageStore';
-import { adaptAsset, adaptEdge, adaptChange } from './services/adapters';
-import { ruleApi, notificationApi } from './services/api';
-import { UserRole, ValidationRule, QualityIssue, NotificationItem } from './types/lineage';
+import { adaptAsset, adaptEdge, adaptChange, adaptMetric } from './services/adapters';
+import { ruleApi, notificationApi, metricApi } from './services/api';
+import { UserRole, ValidationRule, QualityIssue, NotificationItem, MetricDefinition } from './types/lineage';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('workbench');
@@ -95,9 +95,19 @@ export default function App() {
   const edges = hasRealData ? mappedRemoteEdges : INITIAL_EDGES;
   const changes = hasRealData && mappedRemoteChanges.length > 0 ? mappedRemoteChanges : INITIAL_CHANGES;
 
-  // Other mock-backed states (metrics / collectors)
-  const [metrics, setMetrics] = useState(INITIAL_METRICS);
+  // Metric center (M5): real API wins, mock fallback keeps the demo alive offline
+  const [metrics, setMetrics] = useState<MetricDefinition[]>(INITIAL_METRICS);
   const [collectors, setCollectors] = useState(INITIAL_COLLECTORS);
+
+  const refreshMetrics = useCallback(() => {
+    metricApi.list()
+      .then((list: any[]) => {
+        if (Array.isArray(list) && list.length > 0) setMetrics(list.map(adaptMetric));
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => { refreshMetrics(); }, [refreshMetrics]);
 
   // Validation center (M7): real API wins, mock fallback keeps the demo alive offline
   const [rules, setRules] = useState<ValidationRule[]>(INITIAL_RULES);
@@ -208,6 +218,7 @@ export default function App() {
           unmanagedCount={unmanagedCount}
           pendingAckCount={pendingAckCount}
           ruleFailureCount={ruleFailureCount}
+          metricsCount={metrics.length}
         />
 
         {/* Content Area Rendering the Selected Module */}

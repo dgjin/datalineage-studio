@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MetricDefinition } from '../../types/lineage';
+import { metricApi } from '../../services/api';
 import { 
   Binary, 
   Search, 
@@ -21,6 +22,8 @@ interface M5MetricCenterProps {
   onExploreLineage: (assetId: string) => void;
 }
 
+type HistoryEntry = NonNullable<MetricDefinition['historyDiff']>[number];
+
 export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
   metrics,
   onExploreLineage
@@ -29,8 +32,42 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [quickFilter, setQuickFilter] = useState<'ALL' | 'MISSING_CODE' | 'MISSING_TECH' | 'COMPOSITE_DAG'>('ALL');
+  const [remoteHistory, setRemoteHistory] = useState<Record<string, HistoryEntry[]>>({});
 
   const selectedMetric = metrics.find(m => m.code === selectedCode) || metrics[0];
+
+  // Keep the selection valid when the metric list is replaced by API data.
+  useEffect(() => {
+    if (metrics.length > 0 && !metrics.some(m => m.code === selectedCode)) {
+      setSelectedCode(metrics[0].code);
+    }
+  }, [metrics, selectedCode]);
+
+  // Load real version history for the selected metric (falls back to embedded historyDiff).
+  useEffect(() => {
+    const code = selectedMetric?.code;
+    if (!code) return;
+    let cancelled = false;
+    metricApi.history(code)
+      .then((rows: any[]) => {
+        if (cancelled || !Array.isArray(rows) || rows.length === 0) return;
+        setRemoteHistory(prev => ({
+          ...prev,
+          [code]: rows.map(r => ({
+            version: r.version ?? '',
+            date: String(r.createdAt ?? '').slice(0, 10),
+            diff: r.diff ?? '',
+            breakingHistoryData: !!r.breakingHistoryData,
+          })),
+        }));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [selectedMetric?.code]);
+
+  const selectedHistory = selectedMetric
+    ? remoteHistory[selectedMetric.code] ?? selectedMetric.historyDiff
+    : undefined;
 
   const filteredMetrics = metrics.filter(m => {
     if (searchTerm.trim() !== '') {
@@ -41,6 +78,9 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
       if (!matchName && !matchCode && !matchCaliber) return false;
     }
     if (filterType !== 'ALL' && m.type !== filterType) return false;
+    // Quick problem filters from the audit report: unstamped (no physical binding) / composite DAG
+    if (quickFilter === 'MISSING_CODE' && (m.referencedColumns?.length ?? 0) > 0) return false;
+    if (quickFilter === 'COMPOSITE_DAG' && !(m.type === 'COMPOSITE' && (m.upstreamMetrics?.length ?? 0) > 0)) return false;
     return true;
   });
 
@@ -56,7 +96,7 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
               <span>M5 指标中心与三级溯源</span>
             </h1>
             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-              首批 178 项资产
+              {metrics.length} 项治理指标
             </span>
           </div>
           <p className="text-xs text-slate-400">
@@ -281,7 +321,7 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
           </div>
 
           {/* Version Diff & Historical Data Comparability Alert */}
-          {selectedMetric.historyDiff && selectedMetric.historyDiff.length > 0 && (
+          {selectedHistory && selectedHistory.length > 0 && (
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
@@ -291,7 +331,7 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
               </div>
 
               <div className="space-y-2">
-                {selectedMetric.historyDiff.map((h, i) => (
+                {selectedHistory.map((h, i) => (
                   <div key={i} className="p-3 bg-slate-950 rounded-lg border border-slate-800 space-y-2 text-xs">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">

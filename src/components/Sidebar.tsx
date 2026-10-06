@@ -41,6 +41,7 @@ interface SidebarProps {
   unmanagedCount: number;
   pendingAckCount: number;
   ruleFailureCount: number;
+  metricsCount: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -48,7 +49,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onTabChange,
   unmanagedCount,
   pendingAckCount,
-  ruleFailureCount
+  ruleFailureCount,
+  metricsCount
 }) => {
   const mainNav = [
     { id: 'workbench' as NavTab, label: '工作台', icon: Home, badge: null },
@@ -56,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'lineage' as NavTab, label: 'M2 血缘探索器', icon: GitFork, badge: '核心' },
     { id: 'impact' as NavTab, label: 'M3 影响分析', icon: AlertOctagon, badge: pendingAckCount > 0 ? `${pendingAckCount}待确认` : null, badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
     { id: 'changes' as NavTab, label: 'M4 变更中心', icon: Activity, badge: unmanagedCount > 0 ? `${unmanagedCount}暗改` : null, badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/30' },
-    { id: 'metrics' as NavTab, label: 'M5 指标中心', icon: Binary, badge: '178项' },
+    { id: 'metrics' as NavTab, label: 'M5 指标中心', icon: Binary, badge: metricsCount > 0 ? `${metricsCount}项` : null },
     { id: 'contracts' as NavTab, label: 'M6 契约建模', icon: FileCheck2, badge: null },
     { id: 'validation' as NavTab, label: 'M7 校验中心', icon: ShieldAlert, badge: ruleFailureCount > 0 ? `${ruleFailureCount}项告警` : null, badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
     { id: 'inbox' as NavTab, label: 'M8 通知中心', icon: Inbox, badge: pendingAckCount > 0 ? String(pendingAckCount) : null },
