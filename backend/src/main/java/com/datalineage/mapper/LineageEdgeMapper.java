@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
@@ -23,6 +24,17 @@ public interface LineageEdgeMapper extends BaseMapper<LineageEdgeEntity> {
     
     @Select("SELECT * FROM lineage_edges WHERE valid_from <= #{time} AND (valid_to IS NULL OR valid_to > #{time})")
     List<LineageEdgeEntity> findValidEdgesAtTime(@Param("time") String time);
+
+    /**
+     * Recompute is_critical_path for every edge. Edges that cross warehouse layers
+     * (ODS->DWD, DWD->DWS, DWS->ADS trunk pipelines) are marked as critical paths;
+     * same-layer edges are not. Critical edges drive M3 critical impact-path rendering.
+     */
+    @Update("UPDATE lineage_edges e "
+            + "JOIN assets fa ON e.from_asset_id = fa.id "
+            + "JOIN assets ta ON e.to_asset_id = ta.id "
+            + "SET e.is_critical_path = (fa.layer <> ta.layer)")
+    void refreshCriticalPathFlags();
 
     /**
      * Remove auto-discovered edges (FK / view dependency / parsed column lineage) whose

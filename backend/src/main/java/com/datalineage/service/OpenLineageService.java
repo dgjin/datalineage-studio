@@ -96,6 +96,17 @@ public class OpenLineageService {
         log.info("OpenLineage event {} ({}.{}): {} edges created, {} skipped, {} assets registered",
                 eventType, jobNamespace, jobName, edgesCreated, edgesSkipped, assetsCreated);
 
+        // Keep denormalized lineage counters in sync with newly ingested edges
+        if (edgesCreated > 0) {
+            try {
+                assetMapper.updateDownstreamCounts();
+                assetMapper.updateUpstreamCounts();
+                lineageEdgeMapper.refreshCriticalPathFlags();
+            } catch (Exception e) {
+                log.warn("Failed to refresh asset lineage counters: {}", e.getMessage());
+            }
+        }
+
         Map<String, Object> result = new HashMap<>();
         result.put("eventType", eventType);
         result.put("job", jobNamespace + "." + jobName);

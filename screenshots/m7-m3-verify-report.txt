@@ -1,0 +1,14 @@
+1. navigated to M7
+PASS  2. rule library shows 8 real rules [内置规则库 (8)]
+PASS  3. issues ledger shows 5 real issues [质量问题台账 (5)]
+PASS  4. VR-004 rule visible in list
+PASS  5. rule toggle ON->OFF [● 已启用 (Enabled) -> ○ 已停用 (Disabled)]
+PASS  6. rule toggle restored [● 已启用 (Enabled)]
+PASS  7. dry-run report rendered
+   dry-run summary: 目标资产 dws_product_ranking｜ 执行 8 条启用规则 ｜ 命中 1 条违规
+PASS  8. issue ISS-2026-101 visible in ledger
+PASS  9. M3 simulation rendered real impact workbench
+PASS  10. M3 critical paths rendered
+   M3 workbench: 受影响资产与 OWNER 确认工作台 (23)
+   M3 real path chains rendered: 21
+PASS  11. no console errors

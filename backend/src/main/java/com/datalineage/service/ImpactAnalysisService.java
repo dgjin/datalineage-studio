@@ -35,10 +35,13 @@ public class ImpactAnalysisService {
         Set<String> visited = new HashSet<>();
         Map<String, Integer> distances = new LinkedHashMap<>();
         Map<String, List<String>> impactPaths = new HashMap<>();
+        // Asset-id chain from the root to each impacted node (for critical path rendering)
+        Map<String, List<String>> pathNodeIds = new HashMap<>();
 
         queue.offer(assetId);
         visited.add(assetId);
         distances.put(assetId, 0);
+        pathNodeIds.put(assetId, new ArrayList<>(List.of(assetId)));
 
         while (!queue.isEmpty()) {
             String current = queue.poll();
@@ -53,6 +56,9 @@ public class ImpactAnalysisService {
                     List<String> path = new ArrayList<>(impactPaths.getOrDefault(current, Collections.emptyList()));
                     path.add(edge.getId());
                     impactPaths.put(next, path);
+                    List<String> nodePath = new ArrayList<>(pathNodeIds.getOrDefault(current, List.of(current)));
+                    nodePath.add(next);
+                    pathNodeIds.put(next, nodePath);
                     queue.offer(next);
                 }
             }
@@ -93,6 +99,7 @@ public class ImpactAnalysisService {
             impacted.put("department", asset.getDepartment());
             impacted.put("distance", entry.getValue());
             impacted.put("isCriticalPath", isCritical);
+            impacted.put("pathAssetIds", pathNodeIds.getOrDefault(entry.getKey(), List.of()));
             impactedAssets.add(impacted);
         }
 

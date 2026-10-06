@@ -34,7 +34,8 @@ import {
 } from './mock/mockData';
 import { useLineageStore } from './stores/lineageStore';
 import { adaptAsset, adaptEdge, adaptChange } from './services/adapters';
-import { UserRole } from './types/lineage';
+import { ruleApi } from './services/api';
+import { UserRole, ValidationRule, QualityIssue } from './types/lineage';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('workbench');
@@ -94,12 +95,29 @@ export default function App() {
   const edges = hasRealData ? mappedRemoteEdges : INITIAL_EDGES;
   const changes = hasRealData && mappedRemoteChanges.length > 0 ? mappedRemoteChanges : INITIAL_CHANGES;
 
-  // Other mock-backed states (metrics / rules / issues / collectors / notifications)
+  // Other mock-backed states (metrics / collectors / notifications)
   const [metrics, setMetrics] = useState(INITIAL_METRICS);
-  const [rules, setRules] = useState(INITIAL_RULES);
-  const [issues, setIssues] = useState(INITIAL_ISSUES);
   const [collectors, setCollectors] = useState(INITIAL_COLLECTORS);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+
+  // Validation center (M7): real API wins, mock fallback keeps the demo alive offline
+  const [rules, setRules] = useState<ValidationRule[]>(INITIAL_RULES);
+  const [issues, setIssues] = useState<QualityIssue[]>(INITIAL_ISSUES);
+
+  const refreshValidationData = useCallback(() => {
+    ruleApi.list()
+      .then((list: any[]) => {
+        if (Array.isArray(list) && list.length > 0) setRules(list as ValidationRule[]);
+      })
+      .catch(() => {});
+    ruleApi.listIssues()
+      .then((list: any[]) => {
+        if (Array.isArray(list) && list.length > 0) setIssues(list as QualityIssue[]);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => { refreshValidationData(); }, [refreshValidationData]);
 
   // Counts for sidebar badges
   const unmanagedCount = changes.filter(c => !c.isManaged).length;
@@ -254,10 +272,12 @@ export default function App() {
             <M7ValidationCenter
               rules={rules}
               issues={issues}
+              assets={assets}
               onSelectAsset={(id) => {
                 setSelectedAssetId(id);
                 setActiveTab('catalog');
               }}
+              onRefreshRules={refreshValidationData}
             />
           )}
 

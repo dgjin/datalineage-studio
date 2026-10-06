@@ -46,11 +46,24 @@ public class LineageService {
             edge.setIsCriticalPath(false);
         }
         lineageEdgeMapper.insert(edge);
+        refreshAssetCounts();
         return edge;
     }
 
     public void deleteEdge(String id) {
         lineageEdgeMapper.deleteById(id);
+        refreshAssetCounts();
+    }
+
+    /** Recompute denormalized up/downstream counters after manual edge changes. */
+    private void refreshAssetCounts() {
+        try {
+            assetMapper.updateDownstreamCounts();
+            assetMapper.updateUpstreamCounts();
+            lineageEdgeMapper.refreshCriticalPathFlags();
+        } catch (Exception e) {
+            log.warn("Failed to refresh asset lineage counters: {}", e.getMessage());
+        }
     }
 
     public Map<String, Object> getLineageGraph(String space, String layer) {

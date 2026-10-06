@@ -23,4 +23,14 @@ public interface AssetMapper extends BaseMapper<AssetEntity> {
     @Select("SELECT * FROM assets WHERE is_managed = #{isManaged}")
     @ResultMap("mybatis-plus_AssetEntity")
     List<AssetEntity> findByManagedStatus(@Param("isManaged") Boolean isManaged);
+
+    /** Batch-update downstream_count for all assets from lineage_edges. */
+    @org.apache.ibatis.annotations.Update("UPDATE assets a SET a.downstream_count = "
+            + "(SELECT COUNT(*) FROM lineage_edges e WHERE e.from_asset_id = a.id)")
+    void updateDownstreamCounts();
+
+    /** Batch-update upstream_count for all assets from lineage_edges. */
+    @org.apache.ibatis.annotations.Update("UPDATE assets a SET a.upstream_count = "
+            + "(SELECT COUNT(*) FROM lineage_edges e WHERE e.to_asset_id = a.id)")
+    void updateUpstreamCounts();
 }

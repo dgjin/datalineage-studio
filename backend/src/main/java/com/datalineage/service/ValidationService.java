@@ -134,8 +134,62 @@ public class ValidationService {
         return result;
     }
 
+    /**
+     * Dispatch checks by rule code so each built-in rule carries its own semantics.
+     * Graph-level (VR-007) and cross-source (VR-008) rules are validated by their
+     * dedicated engines and reported as passing at the single-asset level.
+     */
     private List<String> checkRule(ValidationRuleEntity rule, AssetEntity asset,
                                    List<AssetColumnEntity> columns) {
+        List<String> issues = new ArrayList<>();
+        String code = rule.getCode() == null ? "" : rule.getCode();
+
+        switch (code) {
+            case "VR-001": // Asset code format (UPPER-CASE-HYPHEN)
+                if (asset.getCode() == null || !asset.getCode().matches("[A-Z0-9-]+")) {
+                    issues.add("Asset code does not follow UPPER-CASE-HYPHEN format");
+                }
+                break;
+            case "VR-002": // Asset description completeness
+                if (asset.getDescription() == null || asset.getDescription().isEmpty()) {
+                    issues.add("Asset description is empty");
+                }
+                break;
+            case "VR-003": // Column comment coverage
+                long undocumented = columns.stream()
+                        .filter(c -> c.getComment() == null || c.getComment().isEmpty())
+                        .count();
+                if (undocumented > 0) {
+                    issues.add(undocumented + " columns have no comment");
+                }
+                break;
+            case "VR-004": // Asset owner required
+                if (asset.getOwner() == null || asset.getOwner().isEmpty()) {
+                    issues.add("Asset has no owner assigned");
+                }
+                break;
+            case "VR-006": // Table naming layer prefix
+                if ("TABLE".equals(asset.getType())
+                        && asset.getName() != null
+                        && !asset.getName().matches("^(ods|dwd|dws|ads|dim)_[a-z0-9_]+")) {
+                    issues.add("Table name does not follow layer prefix convention (ods_/dwd_/dws_/ads_/dim_)");
+                }
+                break;
+            case "VR-005": // Metric naming semantics - validated by the metric engine
+            case "VR-007": // Lineage DAG acyclicity - validated by the graph engine
+            case "VR-008": // Cross-source code consistency - validated by the cross-source engine
+                break;
+            default:
+                // Custom user-defined rules fall back to generic per-category checks
+                issues.addAll(checkByCategory(rule, asset, columns));
+                break;
+        }
+        return issues;
+    }
+
+    /** Generic per-category checks used by custom (non built-in) rules. */
+    private List<String> checkByCategory(ValidationRuleEntity rule, AssetEntity asset,
+                                         List<AssetColumnEntity> columns) {
         List<String> issues = new ArrayList<>();
         String category = rule.getCategory() == null ? "" : rule.getCategory();
 

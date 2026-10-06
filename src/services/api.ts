@@ -190,6 +190,15 @@ export const changeApi = {
   },
   
   get: (id: string) => apiFetch<any>(`/changes/${id}`),
+
+  byAsset: (assetId: string) => apiFetch<any[]>(`/changes/by-asset/${encodeURIComponent(assetId)}`),
+
+  create: (change: any) => apiFetch<any>('/changes', {
+    method: 'POST',
+    body: JSON.stringify(change),
+  }),
+
+  listAcks: (changeId: string) => apiFetch<any[]>(`/changes/${changeId}/acks`),
   
   simulate: (params: { assetId: string; changeType: string; column?: string }) =>
     apiFetch<any>('/impact/simulate', {

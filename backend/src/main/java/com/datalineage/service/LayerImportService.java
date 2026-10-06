@@ -99,6 +99,9 @@ public class LayerImportService {
         LayerImportRelationEntity rel = requireRelation(id);
         int removed = removeEdges(rel);
         relationMapper.deleteById(id);
+        if (removed > 0) {
+            refreshAssetCounts();
+        }
         log.info("Layer import relation {} deleted, {} edges removed", id, removed);
         return removed;
     }
@@ -148,6 +151,11 @@ public class LayerImportService {
                 inserted, removed, outcome.unmatched, outcome.ambiguous));
         rel.setUpdatedAt(LocalDateTime.now());
         relationMapper.updateById(rel);
+
+        // Keep denormalized lineage counters in sync with the rebuilt cross-source edges
+        if (inserted > 0 || removed > 0) {
+            refreshAssetCounts();
+        }
 
         Map<String, Object> result = outcomeToView(rel, outcome);
         result.put("edgesRemoved", removed);
@@ -414,6 +422,17 @@ public class LayerImportService {
         return lineageEdgeMapper.deleteRelationEdges(source,
                 rel.getFromDataSourceId(), rel.getFromLayer(),
                 rel.getToDataSourceId(), rel.getToLayer());
+    }
+
+    /** Recompute denormalized up/downstream counters after cross-source edges change. */
+    private void refreshAssetCounts() {
+        try {
+            assetMapper.updateDownstreamCounts();
+            assetMapper.updateUpstreamCounts();
+            lineageEdgeMapper.refreshCriticalPathFlags();
+        } catch (Exception e) {
+            log.warn("Failed to refresh asset lineage counters: {}", e.getMessage());
+        }
     }
 
     private Map<String, Object> outcomeToView(LayerImportRelationEntity rel, PlanOutcome outcome) {

@@ -77,6 +77,10 @@ public class JdbcSchemaCollector {
                 discoverLineage(conn, metaData, ds, schemas, result);
             }
 
+            // Refresh denormalized upstream/downstream counters so asset cards and
+            // health scoring reflect the freshly rebuilt lineage graph.
+            refreshAssetCounts();
+
             result.setSuccess(true);
         } catch (Exception e) {
             log.error("Collection failed for task: {}", task.getId(), e);
@@ -86,6 +90,22 @@ public class JdbcSchemaCollector {
         
         result.setEndTime(LocalDateTime.now());
         return result;
+    }
+
+    /**
+     * Recompute the denormalized lineage counters on every asset.
+     * down/upstream_count are read by M1 asset cards, M2 node badges and the
+     * health scorer (zombie-asset detection), so they must stay in sync with
+     * the lineage_edges table after any edge rebuild.
+     */
+    public void refreshAssetCounts() {
+        try {
+            assetMapper.updateDownstreamCounts();
+            assetMapper.updateUpstreamCounts();
+            lineageEdgeMapper.refreshCriticalPathFlags();
+        } catch (Exception e) {
+            log.warn("Failed to refresh asset lineage counters: {}", e.getMessage());
+        }
     }
 
     private List<String> getTargetSchemas(MetadataCollectTaskEntity task, DatabaseMetaData metaData) 

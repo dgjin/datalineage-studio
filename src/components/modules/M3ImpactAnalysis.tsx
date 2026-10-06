@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Asset, 
   ChangeType, 
   ImpactVerdict, 
   ImpactReport, 
-  ImpactItem 
+  ImpactItem,
+  ColumnDefinition
 } from '../../types/lineage';
+import { impactApi, changeApi, assetApi } from '../../services/api';
 import { 
   AlertOctagon, 
   ShieldAlert, 
@@ -38,10 +40,14 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
 }) => {
   const [selectedAssetId, setSelectedAssetId] = useState<string>(defaultAssetId);
   const [changeType, setChangeType] = useState<ChangeType>('DROP_COLUMN');
-  const [selectedColumn, setSelectedColumn] = useState<string>('phone');
+  const [selectedColumn, setSelectedColumn] = useState<string>('');
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [report, setReport] = useState<ImpactReport | null>(null);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
+  const [columns, setColumns] = useState<ColumnDefinition[]>([]);
+  const [linkedChangeId, setLinkedChangeId] = useState<string | null>(null);
+  const [ackSaving, setAckSaving] = useState(false);
+  const [simError, setSimError] = useState<string | null>(null);
 
   // Modal states for Ack & Exemption
   const [activeAckItem, setActiveAckItem] = useState<ImpactItem | null>(null);
@@ -50,121 +56,216 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
 
   const selectedAsset = assets.find(a => a.id === selectedAssetId) || assets[0];
 
-  const handleRunSimulation = () => {
-    setIsSimulating(true);
-    setTimeout(() => {
-      // Generate impact report based on selection
-      let verdict: ImpactVerdict = 'BLOCKER';
-      let score = 92;
-      let summary = '此变更拟直接删除核心 phone 明文列，波及下游 1 个DWD表、1 个核心指标、1 个对外API及监管大屏，建议直接阻断！';
-      let criticalPaths = [
-        ['ods_crm_customer.phone', 'dwd_customer_info.masked_phone', 'metric:active_customer_cnt', 'report:crm_risk_overview'],
-        ['ods_crm_customer.phone', 'ads_vip_customer_portrait', 'api:vip_customer_query']
-      ];
-      let directImpacts: ImpactItem[] = [
-        {
-          id: 'imp:1',
-          objectId: 'asset:metric:active_customer_cnt',
-          objectName: '当期有效活跃客户数 (MET-CRM-ACT-001)',
-          type: 'METRIC',
-          distance: 2,
-          via: '过滤条件与关联清洗引用 phone',
-          owner: '林峰 (指标主管)',
-          department: '数据治理与指标委员会',
-          ackStatus: 'PENDING'
-        },
-        {
-          id: 'imp:2',
-          objectId: 'asset:dwd_customer_info',
-          objectName: '客户域标准化明细表 (dwd_customer_info)',
-          type: 'TABLE',
-          distance: 1,
-          via: '表达式 CONCAT(LEFT(phone,3), "****") 强依赖',
-          owner: '陈敏 (数据数仓组)',
-          department: '大数据平台部',
-          ackStatus: 'ACKED'
-        },
-        {
-          id: 'imp:3',
-          objectId: 'asset:api:vip_customer_query',
-          objectName: 'VIP 客户实时权益 OpenAPI',
-          type: 'API',
-          distance: 3,
-          via: '下游集市对外接口序列化',
-          owner: '张伟 (CRM架构师)',
-          department: '中台开放平台部',
-          ackStatus: 'PENDING'
+  // Keep the asset selection valid when the dataset switches between mock and real
+  useEffect(() => {
+    if (assets.length === 0) return;
+    if (!assets.some(a => a.id === selectedAssetId)) {
+      setSelectedAssetId(assets[0].id);
+    }
+  }, [assets, selectedAssetId]);
+
+  // Load the real columns of the selected asset for the target-column picker
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedAssetId) return;
+    assetApi.getColumns(selectedAssetId)
+      .then(rows => {
+        if (cancelled) return;
+        const cols: ColumnDefinition[] = (rows ?? []).map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          type: c.type ?? 'UNKNOWN',
+          nullable: c.nullable ?? true,
+          comment: c.comment ?? '',
+          isPrimary: c.isPrimary ?? false,
+          isPii: c.isPii ?? false,
+          sensitivity: c.sensitivity ?? '内部',
+        }));
+        setColumns(cols);
+        setSelectedColumn(cols[0]?.name ?? '');
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setColumns([]);
+          setSelectedColumn('');
         }
-      ];
+      });
+    return () => { cancelled = true; };
+  }, [selectedAssetId]);
 
-      let suggestions = [
-        '【双写平滑过渡】：在契约中保留 phone 列并标记 DEPRECATED，新增 phone_hash 与 masked_phone 进行双写运行 2 个发布周期。',
-        '【CI 卡点阻断】：此破坏性变更在全部下游 Owner 确认 (Ack) 或架构师签署阶段性豁免单前，禁止合并入生产主干。',
-        '【创建兼容视图】：建议为下游提供向前兼容的数据库视图屏蔽物理表字段变动。'
-      ];
+  const handleRunSimulation = async () => {
+    if (!selectedAsset) return;
+    setIsSimulating(true);
+    setSimError(null);
+    try {
+      const useColumn = ['DROP_COLUMN', 'RENAME_COLUMN', 'CHANGE_DATA_TYPE'].includes(changeType);
+      const sim = await impactApi.simulate({
+        assetId: selectedAsset.id,
+        changeType,
+        columnName: useColumn ? (selectedColumn || undefined) : undefined,
+      });
 
-      let mitigationCodeSnippet: string | undefined = `-- 架构师推荐向前兼容临时视图 (Forward Compatibility View)
-CREATE OR REPLACE VIEW ods_crm_customer_compat AS
-SELECT 
-    cust_id,
-    cust_name,
-    -- 向前兼容桩逻辑：将已弃用明文字段返回为空或掩码，避免下游断链
-    COALESCE(phone_hash, 'DEPRECATED') AS phone,
-    phone_hash,
-    cert_type,
-    cert_no_enc,
-    cust_status,
-    created_time
-FROM ods_crm_customer;`;
+      // Link an existing open change event for this asset so Ack persists against it
+      let linkedChange: any = null;
+      try {
+        const existing = await changeApi.byAsset(selectedAsset.id);
+        linkedChange = (existing ?? []).find(
+          (c: any) => !['RESOLVED', 'REJECTED'].includes(c.status),
+        ) ?? null;
+      } catch { /* linking is optional */ }
+      setLinkedChangeId(linkedChange?.id ?? null);
 
-      if (changeType === 'ADD_NULLABLE_COLUMN') {
-        verdict = 'SAFE';
-        score = 5;
-        summary = '新增可空列且无历史字段破坏，向下完全兼容，系统将自动放行发布。';
-        criticalPaths = [];
-        directImpacts = [];
-        suggestions = ['无需下游确认，CI 兼容性检查已自动通过。'];
-        mitigationCodeSnippet = undefined;
-      } else if (changeType === 'CHANGE_DATA_TYPE') {
-        verdict = 'HIGH';
-        score = 78;
-        summary = '字段数据类型变更可能引发下游隐式类型转换失败或高精度溢出截断。';
+      const nameById = new Map(assets.map(a => [a.id, a.name]));
+      const impacted: any[] = sim.impactedAssets ?? [];
+
+      const directImpacts: ImpactItem[] = impacted.map((a: any) => ({
+        id: `imp:${a.assetId}`,
+        objectId: a.assetId,
+        objectName: `${a.displayTitle ?? a.assetName} (${a.assetName})`,
+        type: a.type,
+        distance: a.distance,
+        via: a.isCriticalPath
+          ? `关键传播链路 · ${a.distance} 跳`
+          : `血缘传播 · ${a.distance} 跳`,
+        owner: a.owner ?? '未指定',
+        department: a.department ?? '—',
+        ackStatus: 'PENDING',
+      }));
+
+      const criticalPaths: string[][] = impacted
+        .filter((a: any) => a.isCriticalPath && Array.isArray(a.pathAssetIds) && a.pathAssetIds.length > 1)
+        .sort((x: any, y: any) => x.distance - y.distance)
+        .slice(0, 3)
+        .map((a: any) => a.pathAssetIds.map((id: string) => nameById.get(id) ?? id));
+
+      const total = sim.totalImpacted ?? 0;
+      const verdictScore: Record<string, number> = { BLOCKER: 95, HIGH: 78, MEDIUM: 55, LOW: 28, SAFE: 5 };
+      const score = Math.max(verdictScore[String(sim.verdict)] ?? 30, Math.min(100, total * 5));
+
+      const suggestions: string[] = [];
+      if (sim.recommendation) suggestions.push(sim.recommendation);
+      if (sim.blockedCount > 0) {
+        suggestions.push(`${sim.blockedCount} 个关键链路资产（报表/指标）将被阻断，需全部 Owner 确认或架构师豁免后方可放行。`);
       }
+      switch (String(sim.verdict)) {
+        case 'BLOCKER':
+          suggestions.push('破坏性变更在全部下游 Owner 确认 (Ack) 前禁止合并入生产主干。');
+          break;
+        case 'HIGH':
+          suggestions.push('请通知全部下游 Owner，并在预定迁移窗口执行变更。');
+          break;
+        case 'MEDIUM':
+          suggestions.push('建议同步更新受影响 API 与报表的字段契约。');
+          break;
+        case 'LOW':
+          suggestions.push('按常规评审流程推进即可，关注下游报表刷新。');
+          break;
+        default:
+          suggestions.push('向下兼容，无需下游确认，可自动放行。');
+      }
+
+      const mitigationCodeSnippet = changeType === 'DROP_COLUMN' && selectedColumn && columns.length > 0
+        ? buildMitigationSnippet(selectedAsset.name, selectedColumn)
+        : undefined;
 
       setReport({
         assetId: selectedAsset.id,
         assetName: selectedAsset.name,
         changeType,
-        targetField: selectedColumn,
-        verdict,
+        targetField: useColumn ? selectedColumn : '',
+        verdict: String(sim.verdict) as ImpactVerdict,
         score,
-        summary,
+        summary: sim.summary ?? '',
         criticalPaths,
         directImpacts,
         suggestions,
-        mitigationCodeSnippet
+        mitigationCodeSnippet,
       });
+    } catch (e: any) {
+      setSimError(e?.message ?? '影响预演失败，请确认后端服务已启动');
+      setReport(null);
+    } finally {
       setIsSimulating(false);
-    }, 450);
+    }
   };
 
-  const handleAckAction = (item: ImpactItem, action: 'ACK' | 'EXEMPT') => {
-    if (!report) return;
-    const updated = report.directImpacts.map(i => {
-      if (i.id === item.id) {
-        return {
-          ...i,
-          ackStatus: (action === 'ACK' ? 'ACKED' : 'EXEMPTED') as any,
-          exemptReason: action === 'EXEMPT' ? exemptionReason : undefined
-        };
+  /** Build a forward-compatibility view template from the real column list. */
+  const buildMitigationSnippet = (assetName: string, targetColumn: string): string | undefined => {
+    if (columns.length === 0) return undefined;
+    const selectList = columns.map(c =>
+      c.name === targetColumn
+        ? `    NULL AS ${c.name} /* [DEPRECATED] forward-compat stub */`
+        : `    ${c.name}`,
+    ).join(',\n');
+    return `-- Forward-compatibility view for pending DROP_COLUMN of ${assetName}.${targetColumn}\n`
+      + `CREATE OR REPLACE VIEW ${assetName}_compat AS\nSELECT\n${selectList}\nFROM ${assetName};`;
+  };
+
+  const handleAckAction = async (item: ImpactItem, action: 'ACK' | 'EXEMPT') => {
+    if (!report || ackSaving) return;
+    setAckSaving(true);
+    try {
+      // Real governance loop: acks persist against a change event. Reuse the linked
+      // open one, or register a planned change event for this asset first.
+      let changeId = linkedChangeId;
+      if (!changeId) {
+        const created = await changeApi.create({
+          assetId: report.assetId,
+          assetName: report.assetName,
+          changeType: report.changeType,
+          detectedBy: 'M3_SIMULATOR',
+          isManaged: false,
+          isBreaking: ['DROP_COLUMN', 'DROP_TABLE', 'RENAME_COLUMN', 'CHANGE_DATA_TYPE'].includes(report.changeType),
+          status: 'DETECTED',
+          details: { column: report.targetField || null },
+        });
+        changeId = created?.id ?? null;
+        setLinkedChangeId(changeId);
       }
-      return i;
-    });
-    setReport({ ...report, directImpacts: updated });
-    setActiveAckItem(null);
-    setExemptionReason('');
-    setShowAckSuccessToast(`已成功为 ${item.objectName} 处理确认事项！`);
-    setTimeout(() => setShowAckSuccessToast(null), 3000);
+      if (!changeId) throw new Error('无法登记变更事件');
+
+      const ack = await impactApi.acknowledge({
+        changeId,
+        objectId: item.objectId,
+        objectName: item.objectName,
+        objectType: item.type,
+        distance: item.distance,
+        via: item.via,
+        owner: item.owner,
+        department: item.department,
+        ackStatus: action === 'ACK' ? 'ACKED' : 'EXEMPTED',
+        exemptReason: action === 'EXEMPT' ? exemptionReason : undefined,
+      });
+
+      if (action === 'EXEMPT' && ack?.id) {
+        await impactApi.applyExemption({ ackId: ack.id, reason: exemptionReason });
+      }
+
+      const updated = report.directImpacts.map(i => {
+        if (i.id === item.id) {
+          return {
+            ...i,
+            ackStatus: (action === 'ACK' ? 'ACKED' : 'EXEMPTED') as any,
+            exemptReason: action === 'EXEMPT' ? exemptionReason : undefined
+          };
+        }
+        return i;
+      });
+      setReport({ ...report, directImpacts: updated });
+      setActiveAckItem(null);
+      setExemptionReason('');
+      setShowAckSuccessToast(
+        action === 'ACK'
+          ? `已为 ${item.objectName} 提交影响确认，归档至变更事件 ${changeId.slice(0, 8)}…`
+          : `已为 ${item.objectName} 提交阶段性豁免申请`,
+      );
+      setTimeout(() => setShowAckSuccessToast(null), 3000);
+    } catch (e: any) {
+      setShowAckSuccessToast(`操作失败: ${e?.message ?? '未知错误'}`);
+      setTimeout(() => setShowAckSuccessToast(null), 4000);
+    } finally {
+      setAckSaving(false);
+    }
   };
 
   const verdictStyles: Record<ImpactVerdict, { bg: string; text: string; border: string; label: string }> = {
@@ -218,13 +319,7 @@ FROM ods_crm_customer;`;
             <label className="block text-slate-400 mb-1.5 font-medium">目标数据资产 (Target Asset)</label>
             <select
               value={selectedAssetId}
-              onChange={(e) => {
-                setSelectedAssetId(e.target.value);
-                const a = assets.find(x => x.id === e.target.value);
-                if (a?.columns && a.columns.length > 0) {
-                  setSelectedColumn(a.columns[0].name);
-                }
-              }}
+              onChange={(e) => setSelectedAssetId(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500"
             >
               {assets.map(a => (
@@ -255,13 +350,13 @@ FROM ods_crm_customer;`;
           {/* Target column (if applicable) */}
           <div>
             <label className="block text-slate-400 mb-1.5 font-medium">目标字段 (Target Column)</label>
-            {selectedAsset?.columns && selectedAsset.columns.length > 0 ? (
+            {columns.length > 0 ? (
               <select
                 value={selectedColumn}
                 onChange={(e) => setSelectedColumn(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500"
               >
-                {selectedAsset.columns.map(c => (
+                {columns.map(c => (
                   <option key={c.id} value={c.name}>
                     {c.name} ({c.type}) {c.isPii ? '[PII]' : ''}
                   </option>
@@ -302,6 +397,14 @@ FROM ods_crm_customer;`;
         </div>
       </div>
 
+      {/* Simulation error banner */}
+      {simError && (
+        <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>{simError}</span>
+        </div>
+      )}
+
       {/* Impact Report Section */}
       {report && (
         <div className="space-y-6">
@@ -335,7 +438,9 @@ FROM ods_crm_customer;`;
                   <User className="w-4 h-4 text-indigo-400" />
                   <span>受影响资产与 Owner 确认工作台 ({report.directImpacts.length})</span>
                 </h3>
-                <span className="text-[11px] text-slate-400">按波及深度排序</span>
+                <span className="text-[11px] text-slate-400">
+                  {linkedChangeId ? `已关联变更事件 ${linkedChangeId.slice(0, 8)}…` : '按波及深度排序'}
+                </span>
               </div>
 
               <div className="space-y-2.5">
@@ -376,13 +481,15 @@ FROM ods_crm_customer;`;
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleAckAction(item, 'ACK')}
-                            className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-[11px] transition"
+                            disabled={ackSaving}
+                            className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-[11px] transition disabled:opacity-50"
                           >
                             确认影响 (Ack)
                           </button>
                           <button
                             onClick={() => setActiveAckItem(item)}
-                            className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] transition"
+                            disabled={ackSaving}
+                            className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] transition disabled:opacity-50"
                           >
                             申请豁免
                           </button>
@@ -522,7 +629,7 @@ FROM ods_crm_customer;`;
               </button>
               <button
                 onClick={() => handleAckAction(activeAckItem, 'EXEMPT')}
-                disabled={!exemptionReason.trim()}
+                disabled={!exemptionReason.trim() || ackSaving}
                 className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold disabled:opacity-50"
               >
                 提交豁免申请并归档

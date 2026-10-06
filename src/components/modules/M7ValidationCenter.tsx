@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { ValidationRule, QualityIssue } from '../../types/lineage';
+import React, { useEffect, useState } from 'react';
+import { ValidationRule, QualityIssue, Asset } from '../../types/lineage';
+import { ruleApi } from '../../services/api';
 import { 
   ShieldAlert, 
   Play, 
@@ -15,33 +16,94 @@ import {
   ArrowRight
 } from 'lucide-react';
 
+interface DryRunViolation {
+  ruleId: string;
+  ruleCode: string;
+  ruleName: string;
+  severity: string;
+  message: string;
+}
+
+interface DryRunResult {
+  assetId: string;
+  assetName: string;
+  rulesExecuted: number;
+  violationCount: number;
+  durationMs: number;
+  violations: DryRunViolation[];
+}
+
 interface M7ValidationCenterProps {
   rules: ValidationRule[];
   issues: QualityIssue[];
+  assets: Asset[];
   onSelectAsset: (assetId: string) => void;
+  onRefreshRules?: () => void;
 }
 
 export const M7ValidationCenter: React.FC<M7ValidationCenterProps> = ({
   rules,
   issues,
-  onSelectAsset
+  assets,
+  onSelectAsset,
+  onRefreshRules
 }) => {
-  const [activeTab, setActiveTab] = useState<'RULES' | 'DRY_RUN' | 'ISSUES'>('RULES');
+  const [activeTab, setActiveTab] = useState<'RULES' | 'ISSUES'>('RULES');
   const [selectedRuleId, setSelectedRuleId] = useState<string>(rules[0]?.id || '');
-  const [dryRunRule, setDryRunRule] = useState<ValidationRule | null>(null);
+  const [dryRunTargetId, setDryRunTargetId] = useState<string>(assets[0]?.id || '');
   const [isRunningDryRun, setIsRunningDryRun] = useState(false);
-  const [dryRunCompleted, setDryRunCompleted] = useState(false);
+  const [dryRunResult, setDryRunResult] = useState<DryRunResult | null>(null);
+  const [dryRunError, setDryRunError] = useState<string | null>(null);
+  const [toggleError, setToggleError] = useState<string | null>(null);
 
   const selectedRule = rules.find(r => r.id === selectedRuleId) || rules[0];
 
-  const handleTriggerDryRun = (rule: ValidationRule) => {
-    setDryRunRule(rule);
+  // Keep selections valid when datasets swap between mock and real data
+  useEffect(() => {
+    if (rules.length === 0) return;
+    if (!rules.some(r => r.id === selectedRuleId)) setSelectedRuleId(rules[0].id);
+  }, [rules, selectedRuleId]);
+
+  useEffect(() => {
+    if (assets.length === 0) return;
+    if (!assets.some(a => a.id === dryRunTargetId)) setDryRunTargetId(assets[0].id);
+  }, [assets, dryRunTargetId]);
+
+  // Dry run: execute all enabled rules against the selected asset via the backend
+  const handleTriggerDryRun = async () => {
+    const targetId = dryRunTargetId || assets[0]?.id;
+    if (!targetId) return;
     setIsRunningDryRun(true);
-    setDryRunCompleted(false);
-    setTimeout(() => {
+    setDryRunError(null);
+    const startedAt = performance.now();
+    try {
+      const res = await ruleApi.execute(targetId);
+      setDryRunResult({
+        assetId: res.assetId ?? targetId,
+        assetName: res.assetName ?? targetId,
+        rulesExecuted: res.rulesExecuted ?? 0,
+        violationCount: res.violationCount ?? 0,
+        durationMs: Math.round(performance.now() - startedAt),
+        violations: res.violations ?? [],
+      });
+      onRefreshRules?.();
+    } catch (e: any) {
+      setDryRunResult(null);
+      setDryRunError(e?.message || '校验执行失败：后端服务不可用');
+    } finally {
       setIsRunningDryRun(false);
-      setDryRunCompleted(true);
-    }, 400);
+    }
+  };
+
+  // Enable/disable a rule through the backend, then refresh the shared rule list
+  const handleToggleRule = async (rule: ValidationRule) => {
+    setToggleError(null);
+    try {
+      await ruleApi.toggle(rule.id);
+      onRefreshRules?.();
+    } catch (e: any) {
+      setToggleError(e?.message || '规则状态同步失败（后端不可用）');
+    }
   };
 
   return (
@@ -158,13 +220,26 @@ export const M7ValidationCenter: React.FC<M7ValidationCenterProps> = ({
               </p>
             </div>
 
-            <button
-              onClick={() => handleTriggerDryRun(selectedRule)}
-              className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-indigo-600 hover:from-amber-500 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-lg shadow-amber-500/20 flex items-center gap-2"
-            >
-              <Play className="w-3.5 h-3.5 fill-white" />
-              <span>立即全量元数据试运行 (Dry Run)</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <select
+                value={dryRunTargetId}
+                onChange={(e) => setDryRunTargetId(e.target.value)}
+                className="px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-amber-500/60 max-w-[200px]"
+                title="选择 Dry Run 目标资产"
+              >
+                {assets.map(a => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleTriggerDryRun}
+                disabled={isRunningDryRun}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-indigo-600 hover:from-amber-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs transition shadow-lg shadow-amber-500/20 flex items-center gap-2"
+              >
+                <Play className="w-3.5 h-3.5 fill-white" />
+                <span>{isRunningDryRun ? '正在执行校验...' : '执行校验 (Dry Run)'}</span>
+              </button>
+            </div>
           </div>
 
           {/* DSL Code Display */}
@@ -174,7 +249,22 @@ export const M7ValidationCenter: React.FC<M7ValidationCenterProps> = ({
                 <FileCode className="w-4 h-4 text-amber-400" />
                 <span>声明式校验 DSL 规则定义</span>
               </span>
-              <span className="text-[11px] text-slate-400 font-mono">状态: {selectedRule.enabled ? '已启用 (Enabled)' : '试运行中'}</span>
+              <div className="flex items-center gap-2">
+                {toggleError && (
+                  <span className="text-[10px] text-rose-400 font-mono">{toggleError}</span>
+                )}
+                <button
+                  onClick={() => handleToggleRule(selectedRule)}
+                  className={`text-[11px] px-2.5 py-1 rounded-full border font-mono transition ${
+                    selectedRule.enabled
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
+                  }`}
+                  title="点击启用/停用该规则（同步后端）"
+                >
+                  {selectedRule.enabled ? '● 已启用 (Enabled)' : '○ 已停用 (Disabled)'}
+                </button>
+              </div>
             </div>
             <pre className="p-3 bg-slate-950 rounded-lg text-xs font-mono text-amber-200/90 overflow-x-auto border border-slate-800 leading-relaxed">
               {selectedRule.expression}
@@ -192,53 +282,57 @@ export const M7ValidationCenter: React.FC<M7ValidationCenterProps> = ({
           </div>
 
           {/* Dry-Run Sandbox Results */}
-          {dryRunRule && dryRunRule.id === selectedRule.id && (
+          {dryRunError && (
+            <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-lg text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>{dryRunError}</span>
+            </div>
+          )}
+
+          {dryRunResult && (
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-cyan-400" />
                   <span>试运行检测报告 (Dry-Run Preview)</span>
                 </h4>
-                {isRunningDryRun ? (
-                  <span className="text-xs text-amber-400 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 animate-spin" />
-                    正在扫描 482 项元数据...
-                  </span>
-                ) : (
-                  <span className="text-xs text-emerald-400 font-mono">
-                    扫描完成：耗时 42ms
-                  </span>
-                )}
+                <span className="text-xs text-emerald-400 font-mono">
+                  耗时 {dryRunResult.durationMs}ms
+                </span>
               </div>
 
-              {!isRunningDryRun && dryRunCompleted && (
-                <div className="space-y-2">
-                  {selectedRule.dryRunHits && selectedRule.dryRunHits.length > 0 ? (
-                    selectedRule.dryRunHits.map((hit, idx) => (
-                      <div key={idx} className="p-3 bg-slate-950 rounded-lg border border-rose-500/30 flex items-center justify-between text-xs">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-rose-300 font-bold">{hit.assetName}</span>
-                            <span className="text-slate-400 font-mono text-[10px]">({hit.assetId})</span>
-                          </div>
-                          <div className="text-slate-300 text-[11px] mt-1">{hit.reason}</div>
-                        </div>
+              <div className="text-[11px] text-slate-400">
+                目标资产 <strong className="text-indigo-400 font-mono">{dryRunResult.assetName}</strong>
+                ｜ 执行 {dryRunResult.rulesExecuted} 条启用规则
+                ｜ 命中 <strong className={dryRunResult.violationCount > 0 ? 'text-rose-400' : 'text-emerald-400'}>{dryRunResult.violationCount}</strong> 条违规
+              </div>
 
-                        <button
-                          onClick={() => onSelectAsset(hit.assetId)}
-                          className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center gap-1"
-                        >
-                          <span>查看资产</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </button>
+              {dryRunResult.violations.length > 0 ? (
+                <div className="space-y-2">
+                  {dryRunResult.violations.map((v, idx) => (
+                    <div key={idx} className="p-3 bg-slate-950 rounded-lg border border-rose-500/30 flex items-center justify-between text-xs">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-rose-300 font-bold">{v.ruleCode}</span>
+                          <span className="text-slate-400 text-[10px]">{v.ruleName}</span>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 font-mono">{v.severity}</span>
+                        </div>
+                        <div className="text-slate-300 text-[11px] mt-1">{v.message}</div>
                       </div>
-                    ))
-                  ) : (
-                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>干跑通过！存量元数据均符合本规则要求，可放心全域启用。</span>
+                      <button
+                        onClick={() => onSelectAsset(dryRunResult.assetId)}
+                        className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center gap-1 shrink-0"
+                      >
+                        <span>查看资产</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
                     </div>
-                  )}
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>干跑通过！该资产存量元数据均符合已启用规则要求。</span>
                 </div>
               )}
             </div>
