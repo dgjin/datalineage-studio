@@ -1,0 +1,9 @@
+1. navigated to M8
+2. notification cards rendered: 7
+PASS  3. real seed notification visible (M7 校验引擎扫描完成)
+PASS  4. real CRITICAL owner-missing notification visible
+   unread before: 5
+PASS  5. ack persisted to backend (unread 5 -> 4)
+PASS  6. mark-all-read persisted (unread = 0)
+   header numeric badges: 0
+PASS  7. no console errors

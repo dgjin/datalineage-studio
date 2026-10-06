@@ -34,8 +34,8 @@ import {
 } from './mock/mockData';
 import { useLineageStore } from './stores/lineageStore';
 import { adaptAsset, adaptEdge, adaptChange } from './services/adapters';
-import { ruleApi } from './services/api';
-import { UserRole, ValidationRule, QualityIssue } from './types/lineage';
+import { ruleApi, notificationApi } from './services/api';
+import { UserRole, ValidationRule, QualityIssue, NotificationItem } from './types/lineage';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('workbench');
@@ -95,10 +95,9 @@ export default function App() {
   const edges = hasRealData ? mappedRemoteEdges : INITIAL_EDGES;
   const changes = hasRealData && mappedRemoteChanges.length > 0 ? mappedRemoteChanges : INITIAL_CHANGES;
 
-  // Other mock-backed states (metrics / collectors / notifications)
+  // Other mock-backed states (metrics / collectors)
   const [metrics, setMetrics] = useState(INITIAL_METRICS);
   const [collectors, setCollectors] = useState(INITIAL_COLLECTORS);
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
 
   // Validation center (M7): real API wins, mock fallback keeps the demo alive offline
   const [rules, setRules] = useState<ValidationRule[]>(INITIAL_RULES);
@@ -118,6 +117,19 @@ export default function App() {
   }, []);
 
   useEffect(() => { refreshValidationData(); }, [refreshValidationData]);
+
+  // Notification center (M8): real API wins, mock fallback keeps the demo alive offline
+  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+
+  const refreshNotifications = useCallback(() => {
+    notificationApi.list()
+      .then((list: any[]) => {
+        if (Array.isArray(list) && list.length > 0) setNotifications(list as NotificationItem[]);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => { refreshNotifications(); }, [refreshNotifications]);
 
   // Counts for sidebar badges
   const unmanagedCount = changes.filter(c => !c.isManaged).length;
@@ -149,10 +161,13 @@ export default function App() {
 
   const handleNotificationAction = (notif: any, action: string) => {
     if (action === 'ack') {
-      alert(`已成功针对变更 ${notif.refId} 提交 Owner 影响确认 (Ack)！`);
+      // Persist the acknowledgement, then flip local state for instant feedback
+      void notificationApi.markRead(notif.id).catch(() => {});
       setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
     } else if (action === 'view_report') {
       setActiveTab('impact');
+    } else if (action === 'open_validation') {
+      setActiveTab('validation');
     } else if (action === 'exempt') {
       setActiveTab('impact');
     } else if (action === 'generate_patch') {
@@ -163,6 +178,7 @@ export default function App() {
   };
 
   const handleMarkAllRead = () => {
+    void notificationApi.markAllRead().catch(() => {});
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
