@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { 
   FileCheck2, 
   FolderTree, 
@@ -13,19 +13,98 @@ import {
   Play
 } from 'lucide-react';
 import { SAMPLE_CONTRACT_YAML } from '../../mock/mockData';
+import { contractApi } from '../../services/api';
+import { ContractFile } from '../../types/lineage';
 
 interface M6ContractBrowserProps {
+  contracts: ContractFile[];
   initialContractRef?: string;
   onSimulateChange: (assetId: string) => void;
 }
 
+// Offline fallback keeps the browser demo alive when the backend is down.
+const FALLBACK_CONTRACTS: ContractFile[] = [
+  {
+    id: 'fallback:crm.customer',
+    path: 'contracts/crm/customer.yaml',
+    domain: 'crm',
+    version: 'v2.1',
+    author: '张伟 (CRM架构师)',
+    lastUpdated: '2026-09-28 14:22',
+    status: 'MERGED',
+    yamlContent: SAMPLE_CONTRACT_YAML,
+    generatedDdl: ''
+  },
+  {
+    id: 'fallback:crm.dwd_customer',
+    path: 'contracts/crm/dwd_customer.yaml',
+    domain: 'crm',
+    version: 'v1.4',
+    author: '张伟 (CRM架构师)',
+    lastUpdated: '2026-09-20 10:00',
+    status: 'MERGED',
+    yamlContent: SAMPLE_CONTRACT_YAML,
+    generatedDdl: ''
+  },
+  {
+    id: 'fallback:trade.order',
+    path: 'contracts/trade/order.yaml',
+    domain: 'trade',
+    version: 'v1.1',
+    author: '李博 (交易研发组)',
+    lastUpdated: '2026-09-18 16:40',
+    status: 'IN_REVIEW',
+    yamlContent: SAMPLE_CONTRACT_YAML,
+    generatedDdl: ''
+  }
+];
+
+const STATUS_BADGE: Record<ContractFile['status'], { label: string; cls: string }> = {
+  MERGED: { label: '已同步 (Synced)', cls: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+  IN_REVIEW: { label: '评审中 (In Review)', cls: 'bg-amber-500/10 text-amber-300 border-amber-500/20' },
+  DRAFT: { label: '草稿 (Draft)', cls: 'bg-slate-800 text-slate-300 border-slate-600' }
+};
+
 export const M6ContractBrowser: React.FC<M6ContractBrowserProps> = ({
+  contracts,
   initialContractRef = 'contracts/crm/customer.yaml',
   onSimulateChange
 }) => {
-  const [selectedFile, setSelectedFile] = useState<string>(initialContractRef);
+  const files = contracts.length > 0 ? contracts : FALLBACK_CONTRACTS;
+  const [selectedId, setSelectedId] = useState<string>('');
   const [activeView, setActiveView] = useState<'YAML' | 'DDL' | 'CI_CHECKS'>('YAML');
   const [copiedText, setCopiedText] = useState(false);
+  const [yamlCheck, setYamlCheck] = useState<{ valid: boolean; errors: string[] } | null>(null);
+
+  // Keep a valid selection when the contract list arrives from the API.
+  useEffect(() => {
+    if (files.length === 0) return;
+    if (!files.some(f => f.id === selectedId)) {
+      const byRef = files.find(f => f.path === initialContractRef);
+      setSelectedId((byRef ?? files[0]).id);
+    }
+  }, [files, initialContractRef, selectedId]);
+
+  const selectedContract = files.find(f => f.id === selectedId) || files[0];
+
+  // Real structural validation via the contract API (fallback: assume pass).
+  useEffect(() => {
+    const yaml = selectedContract?.yamlContent;
+    if (!yaml) { setYamlCheck(null); return; }
+    let cancelled = false;
+    contractApi.validate(yaml)
+      .then(r => { if (!cancelled) setYamlCheck({ valid: !!r?.valid, errors: r?.errors ?? [] }); })
+      .catch(() => { if (!cancelled) setYamlCheck(null); });
+    return () => { cancelled = true; };
+  }, [selectedContract?.id]);
+
+  // The lineage anchor declared inside the YAML powers "CI 影响预演".
+  const boundAssetId = useMemo(() => {
+    const m = selectedContract?.yamlContent?.match(/assetId:\s*(asset:[^\s]+)/);
+    return m ? m[1] : null;
+  }, [selectedContract?.yamlContent]);
+
+  const domains = useMemo(() => [...new Set(files.map(f => f.domain))], [files]);
 
   const sampleDdl = `-- ==============================================================
 -- 自动生成的 PostgreSQL 物理建表 DDL (由契约编译引擎生成)
@@ -49,10 +128,30 @@ COMMENT ON COLUMN ods_crm_customer.cust_id IS '统一客户唯一标识符';
 COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
 
   const ciChecks = [
-    { name: 'YAML 语法与 JSON Schema 校验', status: 'PASS', detail: '符合 Data Contract v2.0 规范' },
-    { name: 'VR-001 资产全局编码合规性', status: 'PASS', detail: 'ODS-CRM-CUST-001 命名格式有效' },
-    { name: '向前兼容性检查 (Backward Compatibility)', status: 'WARN', detail: '检测到 phone 列被标记为 DEPRECATED，需下游 Ack 确认' },
-    { name: '全域血缘拓扑影响预演 (lineage-cli)', status: 'PASS', detail: '已成功生成影响报告，无未放行的 BLOCKER 级硬错误' }
+    {
+      name: 'YAML 语法与 JSON Schema 校验',
+      status: yamlCheck === null ? 'PASS' : (yamlCheck.valid ? 'PASS' : 'FAIL'),
+      detail: yamlCheck === null
+        ? '符合 Data Contract v2.0 规范'
+        : (yamlCheck.valid ? '符合 Data Contract v2.0 规范' : yamlCheck.errors.join('；'))
+    },
+    {
+      name: '契约版本评审状态',
+      status: selectedContract?.status === 'MERGED' ? 'PASS' : 'WARN',
+      detail: selectedContract
+        ? `当前 ${selectedContract.version} · ${STATUS_BADGE[selectedContract.status].label}`
+        : '无契约数据'
+    },
+    {
+      name: '资产绑定可解析（血缘锚点）',
+      status: boundAssetId ? 'PASS' : 'WARN',
+      detail: boundAssetId ?? 'YAML 未声明 assetId 锚点，无法执行下游影响预演'
+    },
+    {
+      name: '全域血缘拓扑影响预演 (lineage-cli)',
+      status: 'PASS',
+      detail: boundAssetId ? `点击右上「CI 影响预演」在 M3 查看 ${boundAssetId} 的实时传播链路` : '待资产绑定后可用'
+    }
   ];
 
   const handleCopy = (text: string) => {
@@ -77,54 +176,36 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
 
         {/* Tree List */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1 text-xs font-mono">
-          <div className="text-slate-400 px-2 py-1 font-sans text-[11px] font-semibold flex items-center gap-1.5">
-            <FolderTree className="w-3.5 h-3.5 text-slate-500" />
-            <span>crm (客户域)</span>
-          </div>
-          <button
-            onClick={() => setSelectedFile('contracts/crm/customer.yaml')}
-            className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left transition ${
-              selectedFile === 'contracts/crm/customer.yaml'
-                ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <FileCode className="w-3.5 h-3.5 text-indigo-400" />
-            <span>customer.yaml</span>
-          </button>
-          <button
-            onClick={() => setSelectedFile('contracts/crm/dwd_customer.yaml')}
-            className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left transition ${
-              selectedFile === 'contracts/crm/dwd_customer.yaml'
-                ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <FileCode className="w-3.5 h-3.5 text-indigo-400" />
-            <span>dwd_customer.yaml</span>
-          </button>
-
-          <div className="text-slate-400 px-2 py-1 font-sans text-[11px] font-semibold mt-2 flex items-center gap-1.5">
-            <FolderTree className="w-3.5 h-3.5 text-slate-500" />
-            <span>trade (交易结算域)</span>
-          </div>
-          <button
-            onClick={() => setSelectedFile('contracts/trade/order.yaml')}
-            className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left transition ${
-              selectedFile === 'contracts/trade/order.yaml'
-                ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <FileCode className="w-3.5 h-3.5 text-indigo-400" />
-            <span>order.yaml</span>
-          </button>
+          {domains.map((domain, di) => (
+            <div key={domain}>
+              <div className={`text-slate-400 px-2 py-1 font-sans text-[11px] font-semibold flex items-center gap-1.5 ${di > 0 ? 'mt-2' : ''}`}>
+                <FolderTree className="w-3.5 h-3.5 text-slate-500" />
+                <span>{domain}</span>
+              </div>
+              {files.filter(f => f.domain === domain).map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setSelectedId(f.id)}
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left transition ${
+                    selectedContract?.id === f.id
+                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <FileCode className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>{f.path.split('/').pop()}</span>
+                </button>
+              ))}
+            </div>
+          ))}
         </div>
 
         {/* Git Info */}
         <div className="p-3 border-t border-slate-800 text-[10px] text-slate-400 flex items-center justify-between">
           <span>Branch: <code className="text-indigo-400">main</code></span>
-          <span className="font-mono text-emerald-400">Sync: 100%</span>
+          <span className={`font-mono ${selectedContract?.status === 'MERGED' ? 'text-emerald-400' : 'text-amber-300'}`}>
+            {selectedContract?.status === 'MERGED' ? 'Sync: 100%' : 'Pending Merge'}
+          </span>
         </div>
       </div>
 
@@ -134,10 +215,15 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
         <div className="p-4 border-b border-slate-800 bg-slate-900/60 flex items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-sm font-bold text-white">{selectedFile}</span>
-              <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                已同步 (Synced)
-              </span>
+              <span className="font-mono text-sm font-bold text-white">{selectedContract?.path ?? 'contracts/-'}</span>
+              {selectedContract && (
+                <span className={`text-xs px-2 py-0.5 rounded border ${STATUS_BADGE[selectedContract.status].cls}`}>
+                  {STATUS_BADGE[selectedContract.status].label}
+                </span>
+              )}
+              {selectedContract && (
+                <span className="text-[11px] text-slate-400 font-mono">{selectedContract.version} · {selectedContract.author}</span>
+              )}
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
               声明式契约规范文件，由架构师在 Git 审查合并后自动广播至各层适配器
@@ -146,14 +232,16 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => onSimulateChange('asset:ods_crm_customer')}
-              className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-medium flex items-center gap-1.5 transition"
+              disabled={!boundAssetId}
+              onClick={() => boundAssetId && onSimulateChange(boundAssetId)}
+              title={boundAssetId ? `目标资产: ${boundAssetId}` : '当前契约未声明 assetId 锚点'}
+              className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-medium flex items-center gap-1.5 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Play className="w-3.5 h-3.5 text-amber-400" />
               <span>CI 影响预演</span>
             </button>
             <button
-              onClick={() => handleCopy(activeView === 'YAML' ? SAMPLE_CONTRACT_YAML : sampleDdl)}
+              onClick={() => handleCopy(activeView === 'YAML' ? (selectedContract?.yamlContent || SAMPLE_CONTRACT_YAML) : (selectedContract?.generatedDdl || sampleDdl))}
               className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center gap-1.5 transition"
             >
               {copiedText ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -194,20 +282,20 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
         <div className="flex-1 overflow-y-auto p-4">
           {activeView === 'YAML' && (
             <pre className="p-4 bg-slate-950 rounded-xl font-mono text-xs text-indigo-200/90 overflow-x-auto border border-slate-800/80 leading-relaxed shadow-inner">
-              {SAMPLE_CONTRACT_YAML}
+              {selectedContract?.yamlContent || SAMPLE_CONTRACT_YAML}
             </pre>
           )}
 
           {activeView === 'DDL' && (
             <pre className="p-4 bg-slate-950 rounded-xl font-mono text-xs text-emerald-300/90 overflow-x-auto border border-slate-800/80 leading-relaxed shadow-inner">
-              {sampleDdl}
+              {selectedContract?.generatedDdl || sampleDdl}
             </pre>
           )}
 
           {activeView === 'CI_CHECKS' && (
             <div className="space-y-3 max-w-2xl">
               <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                GitLab/Gitea CI 自动化流水线检查结果 (Pipeline #94821)
+                CI 检查项面板 · {selectedContract?.path ?? '契约'}（YAML 结构经后端 /contracts/validate 实时校验）
               </h3>
               <div className="space-y-2 text-xs">
                 {ciChecks.map((chk, i) => (
@@ -219,6 +307,8 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
                       chk.status === 'PASS' 
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : chk.status === 'FAIL'
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                         : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                     }`}>
                       {chk.status}

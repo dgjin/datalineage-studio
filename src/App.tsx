@@ -34,8 +34,8 @@ import {
 } from './mock/mockData';
 import { useLineageStore } from './stores/lineageStore';
 import { adaptAsset, adaptEdge, adaptChange, adaptMetric } from './services/adapters';
-import { ruleApi, notificationApi, metricApi } from './services/api';
-import { UserRole, ValidationRule, QualityIssue, NotificationItem, MetricDefinition } from './types/lineage';
+import { ruleApi, notificationApi, metricApi, contractApi } from './services/api';
+import { UserRole, ValidationRule, QualityIssue, NotificationItem, MetricDefinition, ContractFile } from './types/lineage';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('workbench');
@@ -140,6 +140,19 @@ export default function App() {
   }, []);
 
   useEffect(() => { refreshNotifications(); }, [refreshNotifications]);
+
+  // Contract browser (M6): real API wins, component keeps an offline fallback
+  const [contracts, setContracts] = useState<ContractFile[]>([]);
+
+  const refreshContracts = useCallback(() => {
+    contractApi.list()
+      .then((list: any[]) => {
+        if (Array.isArray(list) && list.length > 0) setContracts(list as ContractFile[]);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => { refreshContracts(); }, [refreshContracts]);
 
   // Counts for sidebar badges
   const unmanagedCount = changes.filter(c => !c.isManaged).length;
@@ -290,6 +303,7 @@ export default function App() {
 
           {activeTab === 'contracts' && (
             <M6ContractBrowser
+              contracts={contracts}
               initialContractRef={contractRef}
               onSimulateChange={handleSimulateChange}
             />

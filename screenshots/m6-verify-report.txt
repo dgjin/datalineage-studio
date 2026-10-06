@@ -1,0 +1,15 @@
+1. navigated to M6
+PASS  2. real contract ods_orders.yaml in tree
+PASS  3. real contract dws_customer_summary.yaml in tree
+PASS  4. real contract ads_sales_dashboard.yaml in tree
+PASS  5. domain groups rendered (demo / warehouse / app)
+PASS  6. IN_REVIEW badge rendered (评审中)
+PASS  7. real warehouse YAML with asset anchor rendered
+PASS  8. switching contract swaps real YAML (ods_orders anchor)
+PASS  9. MERGED badge rendered (已同步)
+PASS  10. real generated DDL rendered
+PASS  11. CI panel renders 4 checks
+PASS  12. CI YAML validation PASS from backend
+PASS  13. CI lineage preview references bound asset
+PASS  14. CI 影响预演 navigates to M3 with bound asset
+PASS  15. no console errors
