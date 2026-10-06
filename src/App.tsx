@@ -18,6 +18,7 @@ import { M9GovernanceDashboard } from './components/modules/M9GovernanceDashboar
 import { M10CollectorAdmin } from './components/modules/M10CollectorAdmin';
 import { M11DataSourceManager } from './components/modules/M11DataSourceManager';
 import { M12StandardsHub } from './components/modules/M12StandardsHub';
+import { HelpCenter } from './components/modules/HelpCenter';
 
 // Mock initial data
 import {
@@ -281,6 +282,10 @@ export default function App() {
 
           {activeTab === 'standards' && (
             <M12StandardsHub />
+          )}
+
+          {activeTab === 'help' && (
+            <HelpCenter onNavigateTab={setActiveTab} />
           )}
         </main>
       </div>
