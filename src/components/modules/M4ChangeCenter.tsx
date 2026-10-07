@@ -110,24 +110,28 @@ columns:
 
 auditNote: "反向补录已自动生成 MR !135，请架构师执行代码审查后合并。"`;
 
+  // Release note is generated from the currently selected real change event —
+  // never from hardcoded demo text referencing unrelated assets.
+  const releaseNoteNo = `REL-${(selectedChange?.id || 'N/A').replace(/[^A-Za-z0-9-]/g, '-').slice(-14).toUpperCase()}`;
   const sampleReleaseNote = `========================================================
-数据发布单 #REL-20260930-01 (Release Note for Data)
+数据发布单 #${releaseNoteNo} (Release Note for Data)
 ========================================================
 1. 变更清单:
-   - 目标对象: ods_crm_customer (ODS层)
-   - 变更类型: DROP_COLUMN (废弃 phone 明文列)
-   - 关联代码: Git MR !128 (已通过 CI 语法与规范检查)
+   - 目标对象: ${selectedChange?.assetName ?? '-'}
+   - 变更类型: ${selectedChange?.changeType ?? '-'}${selectedChange?.details?.column ? ` (列 ${selectedChange.details.column})` : ''}
+   - 检测来源: ${selectedChange?.detectedBy ?? '-'} | 时间: ${selectedChange?.timestamp ?? '-'}
+   - 追踪标识: ${selectedChange?.traceId ?? '-'}
 
 2. 影响确认 (Ack) 审计:
-   - 下游确认状态: 2/3 已完成确认 (陈敏 / 张伟)
-   - 阶段性豁免单: 1 项有效 (MET-CRM-ACT-001 有效期至 2026-10-15)
+   - 影响面判定: ${selectedChange?.impactVerdict ?? '-'}
+   - 受影响: 指标 ${selectedChange?.affectedCount?.metrics ?? 0} / 报表看板 ${selectedChange?.affectedCount?.reports ?? 0} / 下游表 ${selectedChange?.affectedCount?.tables ?? 0} / 对外接口 ${selectedChange?.affectedCount?.apis ?? 0}
 
 3. 生产发布 DDL:
-   ALTER TABLE ods_crm_customer DROP COLUMN phone;
-   -- 附带创建向前兼容视图 ods_crm_customer_compat
+${selectedChange?.details?.rawDiff ?? '（该变更未携带原始 DDL 差异记录）'}
 
-4. 建议窗口:
-   - 建议在 2026-10-01 凌晨 02:00-04:00 低峰期执行
+4. 治理与审批状态:
+   - 纳管状态: ${selectedChange?.isManaged ? '受控变更（契约流程内）' : '未纳管暗改（需反向补录契约）'}
+   - 审批状态: ${selectedChange?.status ?? '-'} | 破坏性改动: ${selectedChange?.isBreaking ? '是' : '否'}
 ========================================================`;
 
   return (
@@ -206,6 +210,17 @@ auditNote: "反向补录已自动生成 MR !135，请架构师执行代码审查
 
         {/* Change Cards Stream */}
         <div className="flex-1 overflow-y-auto divide-y divide-slate-800/80">
+          {filteredChanges.length === 0 && (
+            <div className="p-8 text-center space-y-2">
+              <Activity className="w-6 h-6 mx-auto text-slate-600" />
+              <p className="text-xs font-medium text-slate-400">
+                {changes.length === 0 ? '暂无变更事件' : '当前筛选条件下暂无变更事件'}
+              </p>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                变更经契约 CI / 采集探针 / CDC 上报后在此汇聚展示
+              </p>
+            </div>
+          )}
           {filteredChanges.map(chg => {
             const isSelected = selectedChangeId === chg.id;
             return (

@@ -137,7 +137,7 @@ export interface ChangeEvent {
     newValue?: string;
     rawDiff?: string;
   };
-  detectedBy: 'CI_CONTRACT' | 'CDC' | 'PROBE' | 'OPENLINEAGE';
+  detectedBy: 'CI_CONTRACT' | 'CDC' | 'PROBE' | 'OPENLINEAGE' | 'MANUAL';
   isBreaking: boolean;
   isManaged: boolean; // if false, it's an unmanaged "暗改"
   status: 'DETECTED' | 'ANALYZED' | 'ACK_PENDING' | 'APPROVAL_PENDING' | 'APPROVED' | 'REJECTED' | 'RESOLVED' | 'BLOCKED';

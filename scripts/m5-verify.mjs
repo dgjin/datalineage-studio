@@ -25,6 +25,15 @@ page.on('pageerror', (e) => consoleErrors.push('PAGEERROR: ' + e.message));
 await page.route('**fonts.googleapis.com/**', (r) => r.abort());
 await page.route('**fonts.gstatic.com/**', (r) => r.abort());
 
+// Inject an admin session (RBAC AuthGuard) before the app loads
+const _dlAuth = (await (await fetch('http://localhost:8080/api/v1/auth/login', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username: 'admin', password: 'admin123' }),
+})).json()).data;
+await page.addInitScript((state) => {
+  try { window.localStorage.setItem('dl_auth', state); } catch { /* ignore */ }
+}, JSON.stringify({ token: _dlAuth.token, user: _dlAuth.user, expiresAt: Date.now() + _dlAuth.expiresInMs }));
+
 await page.goto('http://localhost:5173/', { waitUntil: 'load', timeout: 30000 });
 await page.waitForTimeout(4500);
 

@@ -3,5 +3,5 @@ PASS  sidebar renders (SPA served by nginx)
 PASS  GET /assets through gateway = 200
 PASS  no API response >= 500 through gateway
 PASS  at least 6 gateway API paths returned 2xx (got 8)
-gateway API statuses: {"changes":200,"lineage/edges":200,"assets":200,"validation/issues":200,"validation/rules":200,"contracts":200,"metrics":200,"notifications":200}
+gateway API statuses: {"lineage/edges":200,"changes":200,"assets":200,"validation/issues":200,"validation/rules":200,"metrics":200,"contracts":200,"notifications":200}
 screenshot: screenshots/b6-ha-browser.png

@@ -3,10 +3,10 @@
 3. datasource "本地测试MySQL" cards: 1
 4. test connection result: success-shown=true fail-shown=false
 screenshot: screenshots/m11-1-datasources.png
-5. task "datalineage库元数据采集" visible: 1
+5. task "datalineage库元数据采集" visible: 0
 6. clicked 立即执行, waiting for result...
 6. run result message shown: true
 7. log panel visible: true
 screenshot: screenshots/m11-2-collect-tasks.png
 screenshot: screenshots/m11-3-fullpage.png
-console errors: ["Failed to load resource: net::ERR_FAILED","Failed to load resource: net::ERR_FAILED"]
+console errors: ["Failed to load resource: net::ERR_FAILED"]

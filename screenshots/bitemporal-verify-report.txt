@@ -5,7 +5,7 @@ PASS  3. run accepted (async)
 PASS  4. run finished (not running anymore)
 PASS  5. run log status = FAILED
 PASS  6. detail.attempts = 3 (got 3)
-PASS  7. backoff evidence: durationMs >= 9000 (got 10032)
+PASS  7. backoff evidence: durationMs >= 9000 (got 10036)
 PASS  8. error message captured on the log
 PASS  9. current head edge set non-empty (124)
 PASS  10. replay far past returns 0 edges (got 0)

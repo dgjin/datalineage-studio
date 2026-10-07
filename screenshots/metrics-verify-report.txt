@@ -10,7 +10,7 @@ PASS  9. gauge datalineage_validation_open_issues = 4 (>=0)
 PASS  10. gauge datalineage_changes_pending_approval = 0 (>=0)
 PASS  11. admin triggers a collection run (200)
 PASS  12. collection run finished
-PASS  13. datalineage_collector_runs_total increased (2 -> 3)
+PASS  13. datalineage_collector_runs_total increased (0 -> 1)
 PASS  14. runs tagged by status (success/failed)
 PASS  15. collector.run.duration timer recorded
 PASS  16. write without token still 401 (RBAC intact)

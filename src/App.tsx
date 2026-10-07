@@ -127,11 +127,13 @@ function AppShell() {
     return () => { cancelled = true; };
   }, [isTimeTravelActive, timeTravelDate, remoteAssetIds]);
 
-  // Real data wins once the backend has collected assets; mock keeps demos alive otherwise
+  // Real data wins once the backend has collected assets; mock keeps demos alive otherwise.
+  // NOTE: an empty change list is a legitimate real state (all events resolved/deleted) —
+  // it must render as an empty M4, never as mock events referencing non-existent assets.
   const hasRealData = mappedRemoteAssets.length > 0;
   const assets = hasRealData ? mappedRemoteAssets : INITIAL_ASSETS;
   const edges = hasRealData ? mappedRemoteEdges : INITIAL_EDGES;
-  const changes = hasRealData && mappedRemoteChanges.length > 0 ? mappedRemoteChanges : INITIAL_CHANGES;
+  const changes = hasRealData ? mappedRemoteChanges : INITIAL_CHANGES;
 
   // Skeletons only cover the very first backend sync, before any real data lands
   const initialLoading = !firstSyncDone && !hasRealData;

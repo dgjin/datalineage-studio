@@ -148,6 +148,14 @@ COMMENT ON TABLE ods_crm_customer IS 'CRM 客户全量数据契约映射表';
 COMMENT ON COLUMN ods_crm_customer.cust_id IS '统一客户唯一标识符';
 COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
 
+  // DDL view: the compiled DDL of the selected real contract wins. A real contract
+  // without a compile artifact must NOT fall back to the demo ods_crm_customer DDL
+  // (mock leak); only the offline fallback contract list uses the sample.
+  const ddlContent = selectedContract?.generatedDdl
+    || (selectedContract && !selectedContract.id.startsWith('fallback:')
+      ? '-- 当前契约暂无编译产物（generatedDdl 为空），请通过契约编译引擎生成'
+      : sampleDdl);
+
   const ciChecks = [
     {
       name: 'YAML 语法与 JSON Schema 校验',
@@ -271,7 +279,7 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
               <span>{schemaChecking ? '校验中…' : '对照资产校验'}</span>
             </button>
             <button
-              onClick={() => handleCopy(activeView === 'YAML' ? (selectedContract?.yamlContent || SAMPLE_CONTRACT_YAML) : (selectedContract?.generatedDdl || sampleDdl))}
+              onClick={() => handleCopy(activeView === 'YAML' ? (selectedContract?.yamlContent || SAMPLE_CONTRACT_YAML) : ddlContent)}
               className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center gap-1.5 transition"
             >
               {copiedText ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -352,7 +360,7 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
 
           {activeView === 'DDL' && (
             <pre className="p-4 bg-slate-950 rounded-xl font-mono text-xs text-emerald-300/90 overflow-x-auto border border-slate-800/80 leading-relaxed shadow-inner">
-              {selectedContract?.generatedDdl || sampleDdl}
+              {ddlContent}
             </pre>
           )}
 

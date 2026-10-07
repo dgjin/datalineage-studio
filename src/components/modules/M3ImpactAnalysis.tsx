@@ -209,11 +209,13 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
       // open one, or register a planned change event for this asset first.
       let changeId = linkedChangeId;
       if (!changeId) {
+        // Registered as a planned (manual) change; MANUAL is the legal enum value
+        // for human/API-initiated change events in change_events.detected_by.
         const created = await changeApi.create({
           assetId: report.assetId,
           assetName: report.assetName,
           changeType: report.changeType,
-          detectedBy: 'M3_SIMULATOR',
+          detectedBy: 'MANUAL',
           isManaged: false,
           isBreaking: ['DROP_COLUMN', 'DROP_TABLE', 'RENAME_COLUMN', 'CHANGE_DATA_TYPE'].includes(report.changeType),
           status: 'DETECTED',

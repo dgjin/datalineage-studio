@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   Asset, 
   LineageEdge, 
@@ -108,6 +108,18 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
   const [highlightDependenciesActive, setHighlightDependenciesActive] = useState<boolean>(false);
   const [filterToSubsetOnly, setFilterToSubsetOnly] = useState<boolean>(false);
   const [isSubsetSnapshotOpen, setIsSubsetSnapshotOpen] = useState<boolean>(false);
+
+  // Keep the path finder endpoints bound to real assets when the dataset switches
+  // from mock seeds (asset:ods_crm_customer) to backend-collected assets.
+  useEffect(() => {
+    if (assets.length === 0) return;
+    const ids = new Set(assets.map(a => a.id));
+    if (!ids.has(pathStart)) setPathStart(assets[0].id);
+    if (!ids.has(pathEnd) || pathEnd === pathStart) {
+      const alt = assets.find(a => a.id !== (ids.has(pathStart) ? pathStart : assets[0].id));
+      if (alt) setPathEnd(alt.id);
+    }
+  }, [assets, pathStart, pathEnd]);
 
   // Multi-select node handler (Shift/Cmd/Ctrl click adds/toggles, normal click single selects)
   const handleNodeSelect = (nodeId: string, e?: React.MouseEvent) => {

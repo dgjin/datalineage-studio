@@ -1,6 +1,6 @@
 PASS  1. M9 shows the audit-trail button
 PASS  2. audit drawer heading visible
-PASS  3. audit records rendered (27 result badges)
+PASS  3. audit records rendered (50 result badges)
    screenshot -> screenshots/b3-m9-audit-drawer.png
 PASS  4. M8 shows the webhook-config button
 PASS  5. webhook modal heading visible

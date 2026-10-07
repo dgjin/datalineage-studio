@@ -126,6 +126,9 @@ node scripts/auth-verify.mjs            # JWT+RBAC（25 项）
 node scripts/m10-verify.mjs             # 采集管理 UI（浏览器，需 vite :5173）
 node scripts/metrics-verify.mjs         # Prometheus 指标（16 项）
 node scripts/governance-smoke.mjs       # 治理场景冒烟（浏览器）
+node scripts/full-module-smoke.mjs      # 全模块 UI 巡检（15 入口 + console 断言，51 项）
+node scripts/closed-loop-verify.mjs     # 七大业务闭环 API 验证（58 项，含幂等清理还原）
+node scripts/realdata-e2e-check.mjs     # 真实数据流入 UI（临时变更闭环 + 空态防 mock 泄漏，16 项）
 ```
 
 ## 监控

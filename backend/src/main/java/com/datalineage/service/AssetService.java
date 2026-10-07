@@ -3,6 +3,7 @@ package com.datalineage.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datalineage.entity.AssetEntity;
 import com.datalineage.entity.AssetColumnEntity;
+import com.datalineage.exception.BusinessException;
 import com.datalineage.mapper.AssetMapper;
 import com.datalineage.mapper.AssetColumnMapper;
 import lombok.RequiredArgsConstructor;
@@ -56,11 +57,51 @@ public class AssetService {
 
     @Transactional
     public AssetEntity createAsset(AssetEntity asset) {
+        if (asset.getName() == null || asset.getName().isBlank()) {
+            throw new BusinessException("资产名称（name）不能为空");
+        }
+        if (asset.getType() == null || asset.getType().isBlank()) {
+            throw new BusinessException("资产类型（type）不能为空");
+        }
+        if (asset.getLayer() == null || asset.getLayer().isBlank()) {
+            throw new BusinessException("资产层级（layer）不能为空");
+        }
         if (asset.getId() == null || asset.getId().isEmpty()) {
             asset.setId("asset:" + UUID.randomUUID().toString().substring(0, 8));
         }
+        // NOT NULL columns without DB defaults: fill safe fallbacks so API/manual
+        // registration cannot fail on missing provenance metadata.
+        if (asset.getCode() == null || asset.getCode().isBlank()) {
+            asset.setCode(generateAssetCode(asset));
+        }
+        if (asset.getSourceType() == null || asset.getSourceType().isBlank()) {
+            asset.setSourceType("MANUAL");
+        }
         assetMapper.insert(asset);
         return asset;
+    }
+
+    /** Fallback code in collector style (e.g. ODS-ODSORDERS-4F2A), UNIQUE-safe. */
+    private String generateAssetCode(AssetEntity asset) {
+        String layer = asset.getLayer() == null || asset.getLayer().isEmpty() ? "ASSET" : asset.getLayer();
+        String cleanName = asset.getName().replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+        if (cleanName.isEmpty()) {
+            cleanName = "ITEM";
+        }
+        String base = layer + "-" + cleanName.substring(0, Math.min(cleanName.length(), 10));
+        String seed = asset.getName() + ":" + asset.getId();
+        String code = base + "-" + hashSuffix(seed);
+        int attempt = 0;
+        while (assetMapper.selectCount(new QueryWrapper<AssetEntity>().eq("code", code)) > 0 && attempt < 5) {
+            attempt++;
+            code = base + "-" + hashSuffix(seed + ":" + attempt);
+        }
+        return code;
+    }
+
+    private static String hashSuffix(String seed) {
+        String hash = Integer.toHexString(seed.hashCode()).toUpperCase();
+        return hash.substring(Math.max(0, hash.length() - 4));
     }
 
     @Transactional
