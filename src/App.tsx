@@ -35,9 +35,9 @@ import {
 } from './mock/mockData';
 import { useLineageStore } from './stores/lineageStore';
 import { adaptAsset, adaptEdge, adaptChange, adaptMetric } from './services/adapters';
-import { ruleApi, notificationApi, metricApi, contractApi, lineageApi } from './services/api';
+import { ruleApi, notificationApi, metricApi, contractApi, lineageApi, collectorApi } from './services/api';
 import { AuthGuard, useAuth, logout } from './components/AuthGuard';
-import { UserRole, ValidationRule, QualityIssue, NotificationItem, MetricDefinition, ContractFile, LineageEdge } from './types/lineage';
+import { UserRole, ValidationRule, QualityIssue, NotificationItem, MetricDefinition, ContractFile, LineageEdge, CollectorAdapter } from './types/lineage';
 
 function AppShell() {
   const auth = useAuth();
@@ -56,6 +56,16 @@ function AppShell() {
 
   // First-sync tracking: skeletons cover the very first backend load only.
   const [firstSyncDone, setFirstSyncDone] = useState<boolean>(false);
+
+  // One-click demo-data switch: OFF (default) keeps the app quasi-production — real
+  // backend data only, an empty list stays empty; ON swaps in the bundled demo dataset
+  // across every module. Persisted so a reload keeps the chosen mode.
+  const [demoMode, setDemoMode] = useState<boolean>(() => {
+    try { return window.localStorage.getItem('dl_demo_mode') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem('dl_demo_mode', demoMode ? '1' : '0'); } catch { /* storage unavailable */ }
+  }, [demoMode]);
 
   // Modals
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
@@ -127,80 +137,101 @@ function AppShell() {
     return () => { cancelled = true; };
   }, [isTimeTravelActive, timeTravelDate, remoteAssetIds]);
 
-  // Real data wins once the backend has collected assets; mock keeps demos alive otherwise.
-  // NOTE: an empty change list is a legitimate real state (all events resolved/deleted) —
-  // it must render as an empty M4, never as mock events referencing non-existent assets.
+  // Demo mode swaps in the bundled dataset; OFF (default) renders real backend data
+  // exactly as-is — an empty list (e.g. all change events resolved) is a legitimate
+  // quasi-production state and must never fall back to mock behind the user's back.
   const hasRealData = mappedRemoteAssets.length > 0;
-  const assets = hasRealData ? mappedRemoteAssets : INITIAL_ASSETS;
-  const edges = hasRealData ? mappedRemoteEdges : INITIAL_EDGES;
-  const changes = hasRealData ? mappedRemoteChanges : INITIAL_CHANGES;
+  const assets = demoMode ? INITIAL_ASSETS : mappedRemoteAssets;
+  const edges = demoMode ? INITIAL_EDGES : mappedRemoteEdges;
+  const changes = demoMode ? INITIAL_CHANGES : mappedRemoteChanges;
 
   // Skeletons only cover the very first backend sync, before any real data lands
-  const initialLoading = !firstSyncDone && !hasRealData;
+  const initialLoading = !demoMode && !firstSyncDone && !hasRealData;
 
-  // Metric center (M5): real API wins, mock fallback keeps the demo alive offline
-  const [metrics, setMetrics] = useState<MetricDefinition[]>(INITIAL_METRICS);
-  const [collectors, setCollectors] = useState(INITIAL_COLLECTORS);
+  // Metric center (M5) + collector admin (M10): real API only; empty is a real state
+  const [metrics, setMetrics] = useState<MetricDefinition[]>([]);
+  const [collectors, setCollectors] = useState<CollectorAdapter[]>([]);
 
   const refreshMetrics = useCallback(() => {
     metricApi.list()
       .then((list: any[]) => {
-        if (Array.isArray(list) && list.length > 0) setMetrics(list.map(adaptMetric));
+        if (Array.isArray(list)) setMetrics(list.map(adaptMetric));
       })
       .catch(() => {});
   }, []);
 
-  useEffect(() => { refreshMetrics(); }, [refreshMetrics]);
+  const refreshCollectors = useCallback(() => {
+    collectorApi.list()
+      .then((list: any[]) => {
+        if (Array.isArray(list)) setCollectors(list as CollectorAdapter[]);
+      })
+      .catch(() => {});
+  }, []);
 
-  // Validation center (M7): real API wins, mock fallback keeps the demo alive offline
-  const [rules, setRules] = useState<ValidationRule[]>(INITIAL_RULES);
-  const [issues, setIssues] = useState<QualityIssue[]>(INITIAL_ISSUES);
+  useEffect(() => { refreshMetrics(); refreshCollectors(); }, [refreshMetrics, refreshCollectors]);
+
+  // Validation center (M7): real API only; empty is a real state
+  const [rules, setRules] = useState<ValidationRule[]>([]);
+  const [issues, setIssues] = useState<QualityIssue[]>([]);
 
   const refreshValidationData = useCallback(() => {
     ruleApi.list()
       .then((list: any[]) => {
-        if (Array.isArray(list) && list.length > 0) setRules(list as ValidationRule[]);
+        if (Array.isArray(list)) setRules(list as ValidationRule[]);
       })
       .catch(() => {});
     ruleApi.listIssues()
       .then((list: any[]) => {
-        if (Array.isArray(list) && list.length > 0) setIssues(list as QualityIssue[]);
+        if (Array.isArray(list)) setIssues(list as QualityIssue[]);
       })
       .catch(() => {});
   }, []);
 
   useEffect(() => { refreshValidationData(); }, [refreshValidationData]);
 
-  // Notification center (M8): real API wins, mock fallback keeps the demo alive offline
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  // Notification center (M8): real API only; empty is a real state
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  // Demo overlay so acknowledge actions stay interactive without a backend write
+  const [demoNotifications, setDemoNotifications] = useState<NotificationItem[]>([]);
+  useEffect(() => {
+    setDemoNotifications(demoMode ? INITIAL_NOTIFICATIONS : []);
+  }, [demoMode]);
 
   const refreshNotifications = useCallback(() => {
     notificationApi.list()
       .then((list: any[]) => {
-        if (Array.isArray(list) && list.length > 0) setNotifications(list as NotificationItem[]);
+        if (Array.isArray(list)) setNotifications(list as NotificationItem[]);
       })
       .catch(() => {});
   }, []);
 
   useEffect(() => { refreshNotifications(); }, [refreshNotifications]);
 
-  // Contract browser (M6): real API wins, component keeps an offline fallback
+  // Contract browser (M6): real API only; demo mode shows the bundled contracts
   const [contracts, setContracts] = useState<ContractFile[]>([]);
 
   const refreshContracts = useCallback(() => {
     contractApi.list()
       .then((list: any[]) => {
-        if (Array.isArray(list) && list.length > 0) setContracts(list as ContractFile[]);
+        if (Array.isArray(list)) setContracts(list as ContractFile[]);
       })
       .catch(() => {});
   }, []);
 
   useEffect(() => { refreshContracts(); }, [refreshContracts]);
 
+  // Effective view data: demo mode shows the bundled dataset in every module, while
+  // the real API state keeps refreshing underneath for a seamless switch back
+  const viewMetrics = demoMode ? INITIAL_METRICS : metrics;
+  const viewRules = demoMode ? INITIAL_RULES : rules;
+  const viewIssues = demoMode ? INITIAL_ISSUES : issues;
+  const viewCollectors = demoMode ? INITIAL_COLLECTORS : collectors;
+  const viewNotifications = demoMode ? demoNotifications : notifications;
+
   // Counts for sidebar badges
   const unmanagedCount = changes.filter(c => !c.isManaged).length;
   const pendingAckCount = changes.filter(c => c.status === 'ACK_PENDING').length;
-  const ruleFailureCount = rules.filter(r => r.hitCount > 0).length;
+  const ruleFailureCount = viewRules.filter(r => r.hitCount > 0).length;
 
   // Keep focus selectors valid when the dataset switches between mock and real
   useEffect(() => {
@@ -227,6 +258,11 @@ function AppShell() {
 
   const handleNotificationAction = (notif: any, action: string) => {
     if (action === 'ack') {
+      if (demoMode) {
+        // Demo mode: flip the overlay list locally, nothing to persist
+        setDemoNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+        return;
+      }
       // Persist the acknowledgement, then flip local state for instant feedback
       void notificationApi.markRead(notif.id).catch(() => {});
       setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
@@ -244,6 +280,10 @@ function AppShell() {
   };
 
   const handleMarkAllRead = () => {
+    if (demoMode) {
+      setDemoNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      return;
+    }
     void notificationApi.markAllRead().catch(() => {});
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
@@ -263,6 +303,8 @@ function AppShell() {
         notifications={notifications}
         onOpenNotifications={() => setActiveTab('inbox')}
         onOpenDesignDoc={() => setIsDesignDocOpen(true)}
+        demoMode={demoMode}
+        onToggleDemoMode={() => setDemoMode(m => !m)}
         authUser={auth?.user}
         onLogout={logout}
       />
@@ -276,7 +318,7 @@ function AppShell() {
           unmanagedCount={unmanagedCount}
           pendingAckCount={pendingAckCount}
           ruleFailureCount={ruleFailureCount}
-          metricsCount={metrics.length}
+          metricsCount={viewMetrics.length}
         />
 
         {/* Content Area Rendering the Selected Module; key resets the boundary on tab switch */}
@@ -286,8 +328,8 @@ function AppShell() {
             <Workbench
               assets={assets}
               changes={changes}
-              issues={issues}
-              metrics={metrics}
+              issues={viewIssues}
+              metrics={viewMetrics}
               onNavigateTab={setActiveTab}
               onSelectAsset={(id) => {
                 setSelectedAssetId(id);
@@ -302,7 +344,7 @@ function AppShell() {
               assets={assets}
               edges={edges}
               changes={changes}
-              issues={issues}
+              issues={viewIssues}
               isLoading={initialLoading}
               selectedAssetId={selectedAssetId}
               onSelectAsset={setSelectedAssetId}
@@ -317,7 +359,7 @@ function AppShell() {
               assets={assets}
               edges={isTimeTravelActive && replayEdges ? replayEdges : edges}
               isLoading={initialLoading}
-              initialFocusId={selectedAssetId || 'asset:ods_crm_customer'}
+              initialFocusId={selectedAssetId || assets[0]?.id || ''}
               isTimeTravelActive={isTimeTravelActive}
               timeTravelDate={timeTravelDate}
               currentSpace={currentSpace}
@@ -344,7 +386,7 @@ function AppShell() {
 
           {activeTab === 'metrics' && (
             <M5MetricCenter
-              metrics={metrics}
+              metrics={viewMetrics}
               onExploreLineage={handleExploreLineage}
             />
           )}
@@ -352,6 +394,7 @@ function AppShell() {
           {activeTab === 'contracts' && (
             <M6ContractBrowser
               contracts={contracts}
+              demoMode={demoMode}
               initialContractRef={contractRef}
               onSimulateChange={handleSimulateChange}
             />
@@ -359,8 +402,8 @@ function AppShell() {
 
           {activeTab === 'validation' && (
             <M7ValidationCenter
-              rules={rules}
-              issues={issues}
+              rules={viewRules}
+              issues={viewIssues}
               assets={assets}
               onSelectAsset={(id) => {
                 setSelectedAssetId(id);
@@ -372,7 +415,7 @@ function AppShell() {
 
           {activeTab === 'inbox' && (
             <M8NotificationCenter
-              notifications={notifications}
+              notifications={viewNotifications}
               onActionClick={handleNotificationAction}
               onMarkAllRead={handleMarkAllRead}
             />
@@ -383,7 +426,7 @@ function AppShell() {
           )}
 
           {activeTab === 'collectors' && (
-            <M10CollectorAdmin collectors={collectors} />
+            <M10CollectorAdmin collectors={viewCollectors} />
           )}
 
           {activeTab === 'datasources' && (
@@ -410,8 +453,8 @@ function AppShell() {
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
         assets={assets}
-        metrics={metrics}
-        rules={rules}
+        metrics={viewMetrics}
+        rules={viewRules}
         onSelectAsset={(id) => {
           setSelectedAssetId(id);
           setActiveTab('catalog');

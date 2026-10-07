@@ -407,9 +407,20 @@ relationTypes:
           </div>
 
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>已注册 4 类主流采集模式 (Pull, Push, Scan) 适配器：</span>
-            <span className="text-emerald-400 font-mono">健康度均值: 99%</span>
+            <span>已注册 {collectors.length} 个采集适配器（Pull / Push / Scan 模式）：</span>
+            <span className="text-emerald-400 font-mono">
+              健康度均值: {collectors.length > 0
+                ? `${Math.round(collectors.reduce((s, c) => s + c.healthScore, 0) / collectors.length)}%`
+                : '--'}
+            </span>
           </div>
+
+          {collectors.length === 0 && (
+            <div className="p-10 text-center text-xs text-slate-500 space-y-1.5 bg-slate-900 border border-slate-800 rounded-xl">
+              <p className="text-slate-400 font-medium">暂无采集适配器</p>
+              <p className="text-[11px]">适配器运行时心跳上报后自动注册于此，可先在上方触发一次采集任务</p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {collectors.map(col => (

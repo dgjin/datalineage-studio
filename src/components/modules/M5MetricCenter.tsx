@@ -142,6 +142,18 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
 
         {/* Metrics List */}
         <div className="flex-1 overflow-y-auto divide-y divide-slate-800/80">
+          {filteredMetrics.length === 0 && (
+            <div className="p-10 text-center text-xs text-slate-500 space-y-1.5">
+              <p className="text-slate-400 font-medium">
+                {metrics.length === 0 ? '暂无指标定义' : '当前筛选条件下暂无指标'}
+              </p>
+              <p className="text-[11px]">
+                {metrics.length === 0
+                  ? '指标在指标中心登记并通过发布门禁后展示于此'
+                  : '请调整搜索词或快捷筛选条件'}
+              </p>
+            </div>
+          )}
           {filteredMetrics.map(m => {
             const isSelected = selectedCode === m.code;
             return (

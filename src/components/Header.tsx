@@ -13,7 +13,8 @@ import {
   Sliders,
   CheckCircle2,
   ChevronDown,
-  LogOut
+  LogOut,
+  FlaskConical
 } from 'lucide-react';
 import { UserRole, NotificationItem } from '../types/lineage';
 import { ROLE_LABELS } from './AuthGuard';
@@ -32,6 +33,8 @@ interface HeaderProps {
   notifications: NotificationItem[];
   onOpenNotifications: () => void;
   onOpenDesignDoc: () => void;
+  demoMode: boolean;
+  onToggleDemoMode: () => void;
   authUser?: AuthUser | null;
   onLogout?: () => void;
 }
@@ -49,6 +52,8 @@ export const Header: React.FC<HeaderProps> = ({
   notifications,
   onOpenNotifications,
   onOpenDesignDoc,
+  demoMode,
+  onToggleDemoMode,
   authUser,
   onLogout
 }) => {
@@ -128,6 +133,22 @@ export const Header: React.FC<HeaderProps> = ({
           <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
           <span className="hidden sm:inline">设计优化演进报告</span>
           <span className="sm:hidden">架构优化</span>
+        </button>
+
+        {/* Demo-data one-click toggle: default OFF = quasi-production (real data only) */}
+        <button
+          onClick={onToggleDemoMode}
+          className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border transition ${
+            demoMode
+              ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 font-medium'
+              : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+          }`}
+          title={demoMode
+            ? '当前：演示数据模式（全站展示内置样例数据）— 点击切回准生产模式'
+            : '当前：准生产模式（仅展示真实后端数据）— 点击切换演示数据'}
+        >
+          <FlaskConical className={`w-3.5 h-3.5 ${demoMode ? 'text-emerald-400' : 'text-slate-400'}`} />
+          <span className="hidden lg:inline">{demoMode ? '演示数据 ON' : '演示数据'}</span>
         </button>
 
         {/* Time Travel Historical Lineage Replay Switch */}

@@ -18,11 +18,13 @@ import { ContractFile } from '../../types/lineage';
 
 interface M6ContractBrowserProps {
   contracts: ContractFile[];
+  demoMode: boolean;
   initialContractRef?: string;
   onSimulateChange: (assetId: string) => void;
 }
 
-// Offline fallback keeps the browser demo alive when the backend is down.
+// Bundled demo contracts, shown only while demo mode is ON. Quasi-production
+// (demo OFF) renders the real API list as-is — including an empty state.
 const FALLBACK_CONTRACTS: ContractFile[] = [
   {
     id: 'fallback:crm.customer',
@@ -67,10 +69,11 @@ const STATUS_BADGE: Record<ContractFile['status'], { label: string; cls: string 
 
 export const M6ContractBrowser: React.FC<M6ContractBrowserProps> = ({
   contracts,
+  demoMode,
   initialContractRef = 'contracts/crm/customer.yaml',
   onSimulateChange
 }) => {
-  const files = contracts.length > 0 ? contracts : FALLBACK_CONTRACTS;
+  const files = demoMode ? FALLBACK_CONTRACTS : contracts;
   const [selectedId, setSelectedId] = useState<string>('');
   const [activeView, setActiveView] = useState<'YAML' | 'DDL' | 'CI_CHECKS'>('YAML');
   const [copiedText, setCopiedText] = useState(false);
@@ -150,11 +153,19 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
 
   // DDL view: the compiled DDL of the selected real contract wins. A real contract
   // without a compile artifact must NOT fall back to the demo ods_crm_customer DDL
-  // (mock leak); only the offline fallback contract list uses the sample.
+  // (mock leak); only the bundled demo contracts use the sample.
   const ddlContent = selectedContract?.generatedDdl
     || (selectedContract && !selectedContract.id.startsWith('fallback:')
       ? '-- 当前契约暂无编译产物（generatedDdl 为空），请通过契约编译引擎生成'
       : sampleDdl);
+
+  // YAML view: real contracts render their own YAML; the bundled demo YAML appears
+  // only in demo mode, and an empty quasi-production state stays a neutral hint
+  // instead of leaking sample content.
+  const yamlContent = selectedContract?.yamlContent
+    || (demoMode
+      ? SAMPLE_CONTRACT_YAML
+      : '# 无可展示的契约内容\n# 通过 Git 提交契约 YAML 后，此处将展示文件原文');
 
   const ciChecks = [
     {
@@ -205,6 +216,12 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
 
         {/* Tree List */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1 text-xs font-mono">
+          {files.length === 0 && (
+            <div className="px-3 py-10 text-center font-sans text-[11px] text-slate-500 leading-relaxed">
+              暂无契约文件<br />
+              <span className="text-slate-600">通过 Git 提交契约 YAML 后自动同步至此</span>
+            </div>
+          )}
           {domains.map((domain, di) => (
             <div key={domain}>
               <div className={`text-slate-400 px-2 py-1 font-sans text-[11px] font-semibold flex items-center gap-1.5 ${di > 0 ? 'mt-2' : ''}`}>
@@ -279,7 +296,7 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
               <span>{schemaChecking ? '校验中…' : '对照资产校验'}</span>
             </button>
             <button
-              onClick={() => handleCopy(activeView === 'YAML' ? (selectedContract?.yamlContent || SAMPLE_CONTRACT_YAML) : ddlContent)}
+              onClick={() => handleCopy(activeView === 'YAML' ? yamlContent : ddlContent)}
               className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center gap-1.5 transition"
             >
               {copiedText ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -354,7 +371,7 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
         <div className="flex-1 overflow-y-auto p-4">
           {activeView === 'YAML' && (
             <pre className="p-4 bg-slate-950 rounded-xl font-mono text-xs text-indigo-200/90 overflow-x-auto border border-slate-800/80 leading-relaxed shadow-inner">
-              {selectedContract?.yamlContent || SAMPLE_CONTRACT_YAML}
+              {yamlContent}
             </pre>
           )}
 

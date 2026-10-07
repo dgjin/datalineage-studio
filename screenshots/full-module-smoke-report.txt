@@ -1,51 +1,51 @@
-PASS   1. 工作台 — body=983ch dom=1 h1="以血缘图谱为核心、以变更事件为驱动、以契约与校验为底线" rendered
+PASS   1. 工作台 — body=988ch dom=1 h1="以血缘图谱为核心、以变更事件为驱动、以契约与校验为底线" rendered
 PASS  工作台 — no ErrorBoundary fallback
 PASS  工作台 — no console errors (0)
-PASS   2. M1 资产目录 — body=4293ch dom=1 h1="M1 统一数据资产目录
+PASS   2. M1 资产目录 — body=4298ch dom=1 h1="M1 统一数据资产目录
 (34 项)" rendered
 PASS  M1 资产目录 — no ErrorBoundary fallback
 PASS  M1 资产目录 — no console errors (0)
 PASS  M1 资产目录 — key content "资产目录" visible
-PASS   3. M2 血缘探索器 — body=3178ch dom=1 h1="" rendered
+PASS   3. M2 血缘探索器 — body=3183ch dom=1 h1="" rendered
 PASS  M2 血缘探索器 — no ErrorBoundary fallback
 PASS  M2 血缘探索器 — no console errors (0)
-PASS   4. M3 影响分析 — body=2024ch dom=1 h1="M3 变更影响分析与 What-If 模拟器" rendered
+PASS   4. M3 影响分析 — body=2029ch dom=1 h1="M3 变更影响分析与 What-If 模拟器" rendered
 PASS  M3 影响分析 — no ErrorBoundary fallback
 PASS  M3 影响分析 — no console errors (0)
-PASS   5. M4 变更中心 — body=432ch dom=1 h1="M4 变更事件中心" rendered
+PASS   5. M4 变更中心 — body=437ch dom=1 h1="M4 变更事件中心" rendered
 PASS  M4 变更中心 — no ErrorBoundary fallback
 PASS  M4 变更中心 — no console errors (0)
-PASS   6. M5 指标中心 — body=1949ch dom=1 h1="M5 指标中心与三级溯源" rendered
+PASS   6. M5 指标中心 — body=1954ch dom=1 h1="M5 指标中心与三级溯源" rendered
 PASS  M5 指标中心 — no ErrorBoundary fallback
 PASS  M5 指标中心 — no console errors (0)
-PASS   7. M6 契约建模 — body=1567ch dom=1 h1="" rendered
+PASS   7. M6 契约建模 — body=1572ch dom=1 h1="" rendered
 PASS  M6 契约建模 — no ErrorBoundary fallback
 PASS  M6 契约建模 — no console errors (0)
-PASS   8. M7 校验中心 — body=1919ch dom=1 h1="M7 校验中心与规则引擎" rendered
+PASS   8. M7 校验中心 — body=1924ch dom=1 h1="M7 校验中心与规则引擎" rendered
 PASS  M7 校验中心 — no ErrorBoundary fallback
 PASS  M7 校验中心 — no console errors (0)
-PASS   9. M8 通知中心 — body=1645ch dom=1 h1="M8 协同通知与闭环中心 (Actionable Inbox" rendered
+PASS   9. M8 通知中心 — body=1650ch dom=1 h1="M8 协同通知与闭环中心 (Actionable Inbox" rendered
 PASS  M8 通知中心 — no ErrorBoundary fallback
 PASS  M8 通知中心 — no console errors (0)
-PASS  10. M9 运营看板 — body=1820ch dom=1 h1="M9 治理运营看板与工作汇报驾驶舱" rendered
+PASS  10. M9 运营看板 — body=1825ch dom=1 h1="M9 治理运营看板与工作汇报驾驶舱" rendered
 PASS  M9 运营看板 — no ErrorBoundary fallback
 PASS  M9 运营看板 — no console errors (0)
 PASS  M9 运营看板 — key content "平均资产健康分" visible
-PASS  11. M10 采集与管理 — body=1454ch dom=1 h1="M10 采集适配器与元模型扩展引擎" rendered
+PASS  11. M10 采集与管理 — body=923ch dom=1 h1="M10 采集适配器与元模型扩展引擎" rendered
 PASS  M10 采集与管理 — no ErrorBoundary fallback
 PASS  M10 采集与管理 — no console errors (0)
 PASS  M10 采集与管理 — key content "采集任务（真实管道" visible
-PASS  12. M11 数据源接入 — body=691ch dom=1 h1="M11 数据源与元数据采集管理" rendered
+PASS  12. M11 数据源接入 — body=722ch dom=1 h1="M11 数据源与元数据采集管理" rendered
 PASS  M11 数据源接入 — no ErrorBoundary fallback
 PASS  M11 数据源接入 — no console errors (0)
-PASS  13. M12 标准中枢 — body=1296ch dom=1 h1="M12 数据标准中枢" rendered
+PASS  13. M12 标准中枢 — body=1301ch dom=1 h1="M12 数据标准中枢" rendered
 PASS  M12 标准中枢 — no ErrorBoundary fallback
 PASS  M12 标准中枢 — no console errors (0)
-PASS  14. M13 数据模型 — body=1011ch dom=1 h1="M13 数据模型前置管理" rendered
+PASS  14. M13 数据模型 — body=1016ch dom=1 h1="M13 数据模型前置管理" rendered
 PASS  M13 数据模型 — no ErrorBoundary fallback
 PASS  M13 数据模型 — no console errors (0)
 PASS  M13 数据模型 — key content "M13 数据模型前置管理" visible
-PASS  15. 帮助中心 — body=2737ch dom=1 h1="一张图看懂操作闭环，分步说明直达每个模块" rendered
+PASS  15. 帮助中心 — body=2742ch dom=1 h1="一张图看懂操作闭环，分步说明直达每个模块" rendered
 PASS  帮助中心 — no ErrorBoundary fallback
 PASS  帮助中心 — no console errors (0)
 PASS  帮助中心 — key content "帮助中心 · 操作闭环与配置指南" visible
