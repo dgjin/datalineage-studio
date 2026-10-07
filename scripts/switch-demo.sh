@@ -19,6 +19,10 @@
 #   - MySQL 容器 dl-mysql-test 运行中（localhost:3307）
 #   - 后端服务运行中（localhost:8080/api/v1）
 #
+# 空库自举:
+#   在 clean 状态（reset-prod-db.sh 之后）下执行，会自动重建主数据源
+#   与主采集任务后继续，无需手工前置配置；写操作自动以 admin 建立会话。
+#
 # 数据来源:
 #   - scripts/demo-dataset.sql     业务库五层基线（20 对象 + 样本数据，幂等重建）
 #   - scripts/demo-full-data.sql   治理侧完整功能数据（幂等清理 + 装载）
@@ -31,12 +35,17 @@ MYSQL_CONTAINER="${MYSQL_CONTAINER:-dl-mysql-test}"
 MYSQL_USER="${MYSQL_USER:-root}"
 MYSQL_PASS="${MYSQL_PASS:-root123}"
 BACKEND="${BACKEND:-http://localhost:8080/api/v1}"
+# RBAC：写操作需要 ADMIN 会话，check_prereq 时登录并全局持有
+TOKEN=""
 
 METRIC_CODES="'order_amount','order_count','avg_order_value','total_sales','customer_count','customer_value_total','category_sales_qty','dashboard_kpi_value'"
 
 # 多数据源分层导入演示：数据源名称常量（按名称做幂等定位）
 MS_DS_WAREHOUSE_NAME="数仓层MySQL（DWD+DWS）"
 MS_DS_APP_NAME="应用层MySQL（ADS+APP）"
+# 主数据源（ODS 贴源层）与主采集任务：干净库环境下自动自举重建
+MS_DS_MASTER_NAME="本地测试MySQL"
+MASTER_TASK_NAME="dl_demo 血缘验证任务"
 
 CMD="${1:-status}"
 
@@ -55,7 +64,18 @@ check_prereq() {
     || die "MySQL 容器 $MYSQL_CONTAINER 未运行"
   curl -sf -m 5 "$BACKEND/dashboard/overview" >/dev/null \
     || die "后端未就绪：${BACKEND}（先启动 backend 再执行切换）"
-  ok "前置检查通过（容器 + 后端在线）"
+  TOKEN=$(login_token)
+  ok "前置检查通过（容器 + 后端在线 + 管理员 API 会话就绪）"
+}
+
+# RBAC：写操作需带 Bearer token，脚本启动时以 admin 账号建立会话
+login_token() {
+  local resp token
+  resp=$(curl -sf -X POST "$BACKEND/auth/login" -H 'Content-Type: application/json' \
+    -d '{"username":"admin","password":"admin123"}') || die "登录失败：无法获取 API 会话"
+  token=$(echo "$resp" | grep -o '"token":"[^"]*"' | head -1 | cut -d'"' -f4)
+  [ -n "$token" ] || die "登录响应缺少 token：$resp"
+  printf '%s' "$token"
 }
 
 # ---------------------------------------------------------------------------
@@ -82,22 +102,37 @@ trigger_collect_by() {
   local tid="$1" resp
   [ -n "$tid" ] || die "采集任务为空"
   log "触发元数据采集（任务 ${tid}）..."
-  resp=$(curl -sf -m 180 -X POST "$BACKEND/collect-tasks/$tid/run") || die "采集触发失败"
+  resp=$(curl -sf -m 180 -X POST "$BACKEND/collect-tasks/$tid/run" -H "Authorization: Bearer ${TOKEN}") || die "采集触发失败"
   echo "$resp" | grep -q '"code":200' || die "采集返回异常：$resp"
   ok "采集完成（资产/血缘已刷新）"
 }
 
-trigger_collect() {
-  local tid
-  tid=$(meta_query "SELECT id FROM metadata_collect_tasks ORDER BY created_at ASC LIMIT 1")
-  [ -n "$tid" ] || die "未找到采集任务（metadata_collect_tasks 为空）"
-  trigger_collect_by "$tid"
+# 幂等获取/创建主数据源（本地测试MySQL，ODS 贴源层），输出数据源 id
+ensure_master_datasource() {
+  local id resp
+  id=$(meta_query "SELECT id FROM data_sources WHERE name = '${MS_DS_MASTER_NAME}' LIMIT 1")
+  if [ -z "$id" ]; then
+    resp=$(curl -sf -X POST "$BACKEND/datasources" -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' -d "{
+      \"name\": \"${MS_DS_MASTER_NAME}\",
+      \"type\": \"MYSQL\",
+      \"host\": \"localhost\",
+      \"port\": 3307,
+      \"databaseName\": \"dl_demo\",
+      \"username\": \"root\",
+      \"passwordEncrypted\": \"root123\",
+      \"status\": \"ACTIVE\"}") || die "主数据源创建失败：${MS_DS_MASTER_NAME}"
+    id=$(echo "$resp" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    log "创建主数据源：${MS_DS_MASTER_NAME}（${id}）" >&2
+  else
+    log "复用主数据源：${MS_DS_MASTER_NAME}（${id}）" >&2
+  fi
+  printf '%s' "$id"
 }
 
 run_naming_check() {
   log "执行命名规范校验（标准中枢闭环：违规自动生成质量问题）..."
   local resp
-  resp=$(curl -sf -m 60 -X POST "$BACKEND/standards/naming-check") || die "命名校验 API 调用失败"
+  resp=$(curl -sf -m 60 -X POST "$BACKEND/standards/naming-check" -H "Authorization: Bearer ${TOKEN}") || die "命名校验 API 调用失败"
   echo "  $(echo "$resp" | head -c 400)"
 }
 
@@ -110,7 +145,7 @@ ensure_datasource() {
   local name="$1" db="$2" id resp
   id=$(meta_query "SELECT id FROM data_sources WHERE name = '${name}' LIMIT 1")
   if [ -z "$id" ]; then
-    resp=$(curl -sf -X POST "$BACKEND/datasources" -H 'Content-Type: application/json' -d "{
+    resp=$(curl -sf -X POST "$BACKEND/datasources" -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' -d "{
       \"name\": \"${name}\",
       \"type\": \"MYSQL\",
       \"host\": \"localhost\",
@@ -132,7 +167,7 @@ ensure_task() {
   local dsid="$1" tname="$2" schema="$3" dlayer="$4" dspace="$5" tid resp
   tid=$(meta_query "SELECT id FROM metadata_collect_tasks WHERE data_source_id = '${dsid}' LIMIT 1")
   if [ -z "$tid" ]; then
-    resp=$(curl -sf -X POST "$BACKEND/collect-tasks" -H 'Content-Type: application/json' -d "{
+    resp=$(curl -sf -X POST "$BACKEND/collect-tasks" -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' -d "{
       \"dataSourceId\": \"${dsid}\",
       \"taskName\": \"${tname}\",
       \"collectScope\": \"SCHEMA_ONLY\",
@@ -152,7 +187,7 @@ ensure_task() {
 # 创建层间关系，输出关系 id
 create_relation() {
   local resp rid
-  resp=$(curl -sf -X POST "$BACKEND/layer-imports" -H 'Content-Type: application/json' -d "$1") \
+  resp=$(curl -sf -X POST "$BACKEND/layer-imports" -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' -d "$1") \
     || die "层间关系创建失败：$1"
   rid=$(echo "$resp" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
   [ -n "$rid" ] || die "层间关系创建响应异常：$resp"
@@ -164,7 +199,7 @@ remove_ms_relations() {
   local ids rid
   ids=$(curl -sf "$BACKEND/layer-imports" | grep -o '"id":"[^"]*","name":"MS-[^"]*"' | cut -d'"' -f4 || true)
   for rid in $ids; do
-    curl -sf -X DELETE "$BACKEND/layer-imports/$rid" >/dev/null || die "关系删除失败：$rid"
+    curl -sf -X DELETE "$BACKEND/layer-imports/$rid" -H "Authorization: Bearer ${TOKEN}" >/dev/null || die "关系删除失败：$rid"
   done
 }
 
@@ -187,8 +222,11 @@ do_full() {
   # 1) 业务库：五层基线 + legacy 遗留对象
   rebuild_business_db
   create_legacy_object
-  # 2) 采集：21 资产（20 基线 + 1 遗留对象）
-  trigger_collect
+  # 2) 采集：21 资产（20 基线 + 1 遗留对象）；主数据源/任务支持从干净库自举
+  local ds1 tid
+  ds1=$(ensure_master_datasource)
+  tid=$(ensure_task "$ds1" "$MASTER_TASK_NAME" "dl_demo" "ODS" "demo")
+  trigger_collect_by "$tid"
   # 3) 治理侧功能数据（标准/词根/编码/契约/指标/规则/质量/变更/审批/通知）
   log "加载完整功能测试数据（demo-full-data.sql）..."
   mysql_exec < "$ROOT_DIR/scripts/demo-full-data.sql" || die "demo-full-data.sql 执行失败"
@@ -213,17 +251,16 @@ do_multisource() {
   mysql_exec < "$ROOT_DIR/scripts/demo-multisource.sql" || die "demo-multisource.sql 执行失败"
   ok "演示库重建完成"
 
-  # 2) 数据源：ODS 用主数据源，另建数仓层/应用层两个数据源（幂等）
+  # 2) 数据源：ODS 用主数据源（干净库自举），另建数仓层/应用层两个数据源（幂等）
   local ds1 ds2 ds3
-  ds1=$(meta_query "SELECT id FROM data_sources WHERE name NOT LIKE '数仓层MySQL%' AND name NOT LIKE '应用层MySQL%' ORDER BY created_at ASC LIMIT 1")
-  [ -n "$ds1" ] || die "未找到主数据源（data_sources 为空）"
+  ds1=$(ensure_master_datasource)
   log "ODS 数据源：${ds1}"
   ds2=$(ensure_datasource "$MS_DS_WAREHOUSE_NAME" "dw_warehouse")
   ds3=$(ensure_datasource "$MS_DS_APP_NAME" "dw_app")
 
   # 3) 采集任务：三层各建一个（幂等）并触发采集（ODS 侧确保基线资产存在）
   local tid1 tid2 tid3
-  tid1=$(ensure_task "$ds1" "ODS 贴源层采集（dl_demo）" "dl_demo" "ODS" "demo")
+  tid1=$(ensure_task "$ds1" "$MASTER_TASK_NAME" "dl_demo" "ODS" "demo")
   tid2=$(ensure_task "$ds2" "数仓层采集（dw_warehouse）" "dw_warehouse" "DWD" "warehouse")
   tid3=$(ensure_task "$ds3" "应用层采集（dw_app）" "dw_app" "ADS" "app")
   trigger_collect_by "$tid1"
@@ -243,7 +280,7 @@ do_multisource() {
   # 5) 构建跨源血缘边（幂等重建）
   log "构建跨源血缘边..."
   for rid in $rel_ids; do
-    curl -sf -m 60 -X POST "$BACKEND/layer-imports/$rid/build" >/dev/null || die "构建失败：$rid"
+    curl -sf -m 60 -X POST "$BACKEND/layer-imports/$rid/build" -H "Authorization: Bearer ${TOKEN}" >/dev/null || die "构建失败：$rid"
   done
   ok "跨源血缘构建完成（M2 图中青绿色连线）"
   printf '\n'
@@ -321,8 +358,11 @@ do_baseline() {
   check_prereq
   reset_governance
   clear_multisource
-  # 采集刷新（资产/血缘回到 20 基线）
-  trigger_collect
+  # 采集刷新（资产/血缘回到 20 基线）；主数据源/任务支持从干净库自举
+  local ds1 tid
+  ds1=$(ensure_master_datasource)
+  tid=$(ensure_task "$ds1" "$MASTER_TASK_NAME" "dl_demo" "ODS" "demo")
+  trigger_collect_by "$tid"
   printf '\n'
   do_status
 }
@@ -348,13 +388,16 @@ UNION ALL SELECT 'approvals',     COUNT(*) FROM approval_records   WHERE id LIKE
 UNION ALL SELECT 'notifications', COUNT(*) FROM notifications      WHERE id LIKE 'ntf-demo%'" \
   | awk -F'\t' '{printf "  %-14s %s\n", $1, $2}'
 
-  local std_n legacy_n cross_n rel_n mode
+  local std_n legacy_n cross_n rel_n assets_n mode
   std_n=$(meta_query "SELECT COUNT(*) FROM data_standards WHERE id LIKE 'std-demo%'")
   legacy_n=$(meta_query "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='dl_demo' AND table_name='legacy_report_tmp'")
   cross_n=$(meta_query "SELECT COUNT(*) FROM lineage_edges WHERE source IN ('CROSS_SOURCE','ETL_PARSER')")
   rel_n=$(meta_query "SELECT COUNT(*) FROM layer_import_relations")
+  assets_n=$(meta_query "SELECT COUNT(*) FROM assets")
   if [ "${rel_n:-0}" -gt 0 ]; then
     mode="multisource（多数据源分层导入：${rel_n} 条关系 · ${cross_n} 条跨源边）"
+  elif [ "${assets_n:-0}" -eq 0 ] && [ "${std_n:-0}" -eq 0 ] && [ "${legacy_n:-0}" -eq 0 ]; then
+    mode="clean（干净初始化的生产环境）"
   elif [ "${std_n:-0}" -gt 0 ] && [ "${legacy_n:-0}" -gt 0 ]; then
     mode="full（完整功能测试数据）"
   elif [ "${std_n:-0}" -eq 0 ] && [ "${legacy_n:-0}" -eq 0 ] && [ "${cross_n:-0}" -eq 0 ]; then
