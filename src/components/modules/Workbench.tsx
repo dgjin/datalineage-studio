@@ -77,7 +77,7 @@ export const Workbench: React.FC<WorkbenchProps> = ({
               className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition"
             >
               <Binary className="w-3.5 h-3.5 text-cyan-400" />
-              <span>178 项核心指标库 (M5)</span>
+              <span>{metrics.length} 项核心指标库 (M5)</span>
             </button>
           </div>
         </div>

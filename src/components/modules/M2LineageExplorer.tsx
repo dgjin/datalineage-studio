@@ -59,8 +59,8 @@ interface M2LineageExplorerProps {
   isLoading?: boolean;
   initialFocusId?: string;
   isTimeTravelActive?: boolean;
-  timeTravelDate?: string;
-  currentSpace?: string;
+  timeTravelDate: string;
+  currentSpace: string;
   onSimulateChange: (assetId: string) => void;
   onNavigateContract: (contractRef?: string) => void;
 }
@@ -71,8 +71,8 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
   isLoading = false,
   initialFocusId = '',
   isTimeTravelActive = false,
-  timeTravelDate = '2026-08-01',
-  currentSpace = 'crm',
+  timeTravelDate,
+  currentSpace,
   onSimulateChange,
   onNavigateContract
 }) => {

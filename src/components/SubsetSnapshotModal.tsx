@@ -24,7 +24,7 @@ interface SubsetSnapshotModalProps {
   onClose: () => void;
   selectedAssets: Asset[];
   subsetEdges: LineageEdge[];
-  currentSpace?: string;
+  currentSpace: string;
   onOpenFullExport?: () => void;
 }
 
@@ -33,7 +33,7 @@ export const SubsetSnapshotModal: React.FC<SubsetSnapshotModalProps> = ({
   onClose,
   selectedAssets,
   subsetEdges,
-  currentSpace = 'crm',
+  currentSpace,
   onOpenFullExport
 }) => {
   const [copiedMd, setCopiedMd] = useState(false);
