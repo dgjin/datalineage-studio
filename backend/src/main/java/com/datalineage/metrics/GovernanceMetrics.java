@@ -2,6 +2,7 @@ package com.datalineage.metrics;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.datalineage.entity.ChangeEventEntity;
+import com.datalineage.entity.LineageEdgeEntity;
 import com.datalineage.entity.QualityIssueEntity;
 import com.datalineage.mapper.AssetMapper;
 import com.datalineage.mapper.ChangeEventMapper;
@@ -35,8 +36,10 @@ public class GovernanceMetrics {
     public static final String COLLECTOR_RUNS = "datalineage.collector.runs.total";
     public static final String COLLECTOR_DURATION = "datalineage.collector.run.duration";
     public static final String EDGES_DISCOVERED = "datalineage.lineage.edges.discovered.total";
+    public static final String EDGES_EXPIRED = "datalineage.lineage.edges.expired.total";
     public static final String APPROVAL_DECISIONS = "datalineage.approval.decisions.total";
     public static final String APPROVAL_LATENCY = "datalineage.approval.decision.latency";
+    public static final String WEBHOOK_DELIVERIES = "datalineage.webhook.deliveries.total";
 
     private final MeterRegistry registry;
     private final AssetMapper assetMapper;
@@ -48,7 +51,9 @@ public class GovernanceMetrics {
     void registerGauges() {
         Gauge.builder("datalineage.assets.total", assetMapper, m -> safeCount(() -> m.selectCount(null)))
                 .register(registry);
-        Gauge.builder("datalineage.lineage.edges.total", lineageEdgeMapper, m -> safeCount(() -> m.selectCount(null)))
+        Gauge.builder("datalineage.lineage.edges.total", lineageEdgeMapper,
+                        m -> safeCount(() -> m.selectCount(Wrappers.<LineageEdgeEntity>lambdaQuery()
+                                .isNull(LineageEdgeEntity::getValidTo))))
                 .register(registry);
         Gauge.builder("datalineage.validation.open.issues", qualityIssueMapper,
                         m -> safeCount(() -> m.selectCount(Wrappers.<QualityIssueEntity>lambdaQuery()
@@ -77,6 +82,21 @@ public class GovernanceMetrics {
             long seconds = Math.max(0, Duration.between(createdAt, LocalDateTime.now()).getSeconds());
             registry.timer(APPROVAL_LATENCY).record(seconds, TimeUnit.SECONDS);
         }
+    }
+
+    /** Records retired stale edges from the lineage retention sweep. */
+    public void recordLineageEdgesExpired(int count) {
+        if (count > 0) {
+            registry.counter(EDGES_EXPIRED).increment(count);
+        }
+    }
+
+    /** Records one outbound webhook delivery attempt by result and event. */
+    public void recordWebhookDelivery(boolean success, String event) {
+        registry.counter(WEBHOOK_DELIVERIES,
+                        "result", success ? "success" : "failed",
+                        "event", event == null || event.isBlank() ? "unknown" : event)
+                .increment();
     }
 
     /** Gauge queries must never break a scrape: fall back to 0 on any failure. */

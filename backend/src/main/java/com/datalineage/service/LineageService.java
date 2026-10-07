@@ -22,6 +22,9 @@ public class LineageService {
 
     public List<LineageEdgeEntity> listEdges(String assetId, String kind) {
         QueryWrapper<LineageEdgeEntity> wrapper = new QueryWrapper<>();
+        // Only currently valid edges participate in the live graph; retired edges
+        // (valid_to set) remain queryable exclusively through time-travel replay.
+        wrapper.isNull("valid_to");
         if (assetId != null && !assetId.isEmpty()) {
             wrapper.and(w -> w.eq("from_asset_id", assetId).or().eq("to_asset_id", assetId));
         }
@@ -29,6 +32,11 @@ public class LineageService {
             wrapper.eq("kind", kind);
         }
         return lineageEdgeMapper.selectList(wrapper);
+    }
+
+    /** Bi-temporal replay: edges valid at the given timestamp (yyyy-MM-dd or ISO date-time). */
+    public List<LineageEdgeEntity> listEdgesAtTime(String time) {
+        return lineageEdgeMapper.findValidEdgesAtTime(time);
     }
 
     public List<LineageEdgeEntity> getAssetLineage(String assetId) {
@@ -81,7 +89,8 @@ public class LineageService {
         Map<String, AssetEntity> byId = assets.stream()
                 .collect(Collectors.toMap(AssetEntity::getId, a -> a, (a, b) -> a));
 
-        List<LineageEdgeEntity> edges = lineageEdgeMapper.selectList(null);
+        List<LineageEdgeEntity> edges = lineageEdgeMapper.selectList(
+                new QueryWrapper<LineageEdgeEntity>().isNull("valid_to"));
         if (filtered) {
             edges = edges.stream()
                     .filter(e -> byId.containsKey(e.getFromAssetId()) && byId.containsKey(e.getToAssetId()))
@@ -119,7 +128,8 @@ public class LineageService {
      */
     public Map<String, Object> extractSubgraph(String rootId, int depth, String direction) {
         String dir = direction == null || direction.isEmpty() ? "BOTH" : direction.toUpperCase();
-        List<LineageEdgeEntity> allEdges = lineageEdgeMapper.selectList(null);
+        List<LineageEdgeEntity> allEdges = lineageEdgeMapper.selectList(
+                new QueryWrapper<LineageEdgeEntity>().isNull("valid_to"));
 
         Map<String, List<LineageEdgeEntity>> downstream = new HashMap<>();
         Map<String, List<LineageEdgeEntity>> upstream = new HashMap<>();
@@ -181,8 +191,9 @@ public class LineageService {
     }
 
     public List<LineageEdgeEntity> findShortestPath(String fromId, String toId) {
-        // BFS implementation for shortest path
-        List<LineageEdgeEntity> allEdges = lineageEdgeMapper.selectList(null);
+        // BFS implementation for shortest path (live edges only)
+        List<LineageEdgeEntity> allEdges = lineageEdgeMapper.selectList(
+                new QueryWrapper<LineageEdgeEntity>().isNull("valid_to"));
         
         // Build adjacency list
         Map<String, List<LineageEdgeEntity>> adj = new HashMap<>();

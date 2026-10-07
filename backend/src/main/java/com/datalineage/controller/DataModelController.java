@@ -1,5 +1,6 @@
 package com.datalineage.controller;
 
+import com.datalineage.audit.AuditLog;
 import com.datalineage.dto.ApiResponse;
 import com.datalineage.entity.DataModelEntity;
 import com.datalineage.entity.DataModelTableEntity;
@@ -24,6 +25,7 @@ public class DataModelController {
     private final DataModelService dataModelService;
 
     @PostMapping("/import")
+    @AuditLog(action = "MODEL_IMPORT", resourceType = "MODEL", summary = "导入数据模型文件")
     @Operation(summary = "导入 ERMaster 模型文件")
     public ApiResponse<DataModelEntity> importModel(
             @RequestParam("file") MultipartFile file,

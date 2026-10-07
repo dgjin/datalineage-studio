@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +34,7 @@ public class ChangeService {
     private final ImpactAnalysisService impactAnalysisService;
     private final NotificationService notificationService;
     private final ApprovalService approvalService;
+    private final WebhookService webhookService;
 
     public List<ChangeEventEntity> listChanges(String status, Boolean isManaged, Boolean isBreaking) {
         QueryWrapper<ChangeEventEntity> wrapper = new QueryWrapper<>();
@@ -115,6 +117,17 @@ public class ChangeService {
                     "CHANGE_EVENT",
                     change.getId());
         }
+
+        // Push to external subscribers (CI/CD webhooks), fire-and-forget.
+        Map<String, Object> webhookPayload = new LinkedHashMap<>();
+        webhookPayload.put("changeId", change.getId());
+        webhookPayload.put("assetId", change.getAssetId());
+        webhookPayload.put("assetName", change.getAssetName());
+        webhookPayload.put("status", change.getStatus());
+        webhookPayload.put("isBreaking", change.getIsBreaking());
+        webhookPayload.put("impactVerdict", change.getImpactVerdict());
+        webhookPayload.put("detectedAt", change.getTimestamp() == null ? null : change.getTimestamp().toString());
+        webhookService.publish(WebhookService.EVENT_CHANGE_CREATED, webhookPayload);
 
         return changeEventMapper.selectById(change.getId());
     }

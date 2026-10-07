@@ -1,13 +1,16 @@
 package com.datalineage.controller;
 
+import com.datalineage.audit.AuditLog;
 import com.datalineage.dto.ApiResponse;
 import com.datalineage.entity.LineageEdgeEntity;
+import com.datalineage.service.LineageRetentionService;
 import com.datalineage.service.LineageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +21,7 @@ import java.util.Map;
 public class LineageController {
 
     private final LineageService lineageService;
+    private final LineageRetentionService lineageRetentionService;
 
     @GetMapping("/edges")
     @Operation(summary = "获取血缘边列表")
@@ -33,6 +37,28 @@ public class LineageController {
     public ApiResponse<List<LineageEdgeEntity>> getAssetLineage(@PathVariable String assetId) {
         List<LineageEdgeEntity> lineage = lineageService.getAssetLineage(assetId);
         return ApiResponse.success(lineage);
+    }
+
+    @GetMapping("/edges/at-time")
+    @Operation(summary = "时点回放：获取指定时间点有效的血缘边（bitemporal replay）")
+    public ApiResponse<Map<String, Object>> edgesAtTime(@RequestParam String time) {
+        List<LineageEdgeEntity> edges = lineageService.listEdgesAtTime(time);
+        Map<String, Object> result = new HashMap<>();
+        result.put("time", time);
+        result.put("edges", edges);
+        result.put("edgeCount", edges.size());
+        return ApiResponse.success(result);
+    }
+
+    @PostMapping("/retention/sweep")
+    @AuditLog(action = "RETENTION_SWEEP", resourceType = "LINEAGE", summary = "血缘滞留清理（超期失效+置信度衰减）")
+    @Operation(summary = "手动触发血缘滞留清理（超期自动边失效+置信度衰减）")
+    public ApiResponse<Map<String, Object>> retentionSweep() {
+        int expired = lineageRetentionService.sweep();
+        Map<String, Object> result = new HashMap<>();
+        result.put("expiredEdges", expired);
+        result.put("retentionDays", LineageRetentionService.RETENTION_DAYS);
+        return ApiResponse.success(result, "Retention sweep completed");
     }
 
     @GetMapping("/graph")

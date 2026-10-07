@@ -1,5 +1,6 @@
 package com.datalineage.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datalineage.entity.AssetEntity;
 import com.datalineage.entity.LineageEdgeEntity;
 import com.datalineage.mapper.AssetMapper;
@@ -27,7 +28,9 @@ public class ImpactAnalysisService {
      * Analyze the downstream impact of an asset (blast radius).
      */
     public Map<String, Object> analyzeImpact(String assetId) {
-        List<LineageEdgeEntity> allEdges = lineageEdgeMapper.selectList(null);
+        // Only live (non-retired) edges drive blast-radius analysis
+        List<LineageEdgeEntity> allEdges = lineageEdgeMapper.selectList(
+                new QueryWrapper<LineageEdgeEntity>().isNull("valid_to"));
         Map<String, List<LineageEdgeEntity>> adjacency = buildAdjacency(allEdges);
 
         // BFS downstream traversal with distance tracking

@@ -32,6 +32,7 @@ public class ApprovalService {
     private final ApprovalRecordMapper approvalRecordMapper;
     private final NotificationService notificationService;
     private final GovernanceMetrics governanceMetrics;
+    private final WebhookService webhookService;
 
     /**
      * Auto-trigger the approval gate for high-risk managed changes.
@@ -124,6 +125,18 @@ public class ApprovalService {
                         : comment,
                 "CHANGE_EVENT",
                 changeId);
+
+        // Push the decision to external subscribers (CI/CD webhooks).
+        Map<String, Object> webhookPayload = new LinkedHashMap<>();
+        webhookPayload.put("changeId", changeId);
+        webhookPayload.put("assetName", change.getAssetName());
+        webhookPayload.put("action", action);
+        webhookPayload.put("actor", actor);
+        webhookPayload.put("status", targetStatus);
+        webhookPayload.put("comment", comment);
+        webhookPayload.put("decidedAt", LocalDateTime.now().toString());
+        webhookService.publish(WebhookService.EVENT_APPROVAL_DECIDED, webhookPayload);
+
         return changeEventMapper.selectById(changeId);
     }
 

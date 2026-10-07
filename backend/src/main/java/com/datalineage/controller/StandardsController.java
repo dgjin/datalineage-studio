@@ -1,5 +1,6 @@
 package com.datalineage.controller;
 
+import com.datalineage.audit.AuditLog;
 import com.datalineage.dto.ApiResponse;
 import com.datalineage.entity.DataStandardEntity;
 import com.datalineage.entity.GlossaryTermEntity;
@@ -132,6 +133,7 @@ public class StandardsController {
     // ---- Naming checks ----
 
     @PostMapping("/naming-check")
+    @AuditLog(action = "NAMING_CHECK", resourceType = "STANDARD", summary = "全量命名落标校验")
     @Operation(summary = "对全部资产执行命名规范校验（命中自动生成质量问题）")
     public ApiResponse<Map<String, Object>> executeNamingCheck() {
         return ApiResponse.success(standardService.executeNamingCheck(), "Naming check executed");

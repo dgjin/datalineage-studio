@@ -1,0 +1,22 @@
+PASS  0. admin login (token issued)
+PASS  1. webhook subscription created
+PASS  2. subscription listed with masked secret
+PASS  3. test delivery received by endpoint
+PASS  4. X-DL-Timestamp header present
+PASS  5. X-DL-Signature HMAC-SHA256 valid
+PASS  6. non-conforming asset created for the check
+PASS  7. standard.violation webhook received
+PASS  8. violation payload names the bad asset
+PASS  9. change event recorded
+PASS  10. change.created webhook received
+PASS  11. change payload carries the changeId
+PASS  12. audit: WEBHOOK_CREATE recorded
+PASS  13. audit: caller + role + result captured
+PASS  14. audit: latency + client ip captured
+PASS  15. audit: resource typed as WEBHOOK
+PASS  16. audit: NAMING_CHECK recorded
+PASS  17. audit: POST /assets derived as action=CREATE
+PASS  18. audit: filterable by action (COLLECT_RUN query ok)
+PASS  19. audit: WEBHOOK_DELETE recorded
+PASS  20. metric webhook.deliveries.total exposed
+PASS  21. successful deliveries counted (5)

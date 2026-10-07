@@ -570,26 +570,43 @@ public class JdbcSchemaCollector {
             }
         }
 
-        // Resolve endpoint existence once, then rebuild edges under the scanned schemas
+        // Resolve endpoint existence once, then rebuild edges under the scanned schemas.
+        // Auto-discovered edges are retired (soft-invalidated via valid_to) instead of
+        // physically deleted, so bi-temporal time travel keeps the previous graph;
+        // edges reproduced by this run are revived in place (id stable, valid_from and
+        // last_seen_at refreshed), genuinely new edges are inserted.
         Map<String, Boolean> assetExists = new HashMap<>();
         for (LineageEdgeEntity edge : discovered.values()) {
             assetExists.computeIfAbsent(edge.getFromAssetId(), id -> assetMapper.selectById(id) != null);
             assetExists.computeIfAbsent(edge.getToAssetId(), id -> assetMapper.selectById(id) != null);
         }
 
-        lineageEdgeMapper.deleteAutoDiscoveredBySchemas(schemas);
-        int inserted = 0;
+        int retired = lineageEdgeMapper.retireAutoDiscoveredBySchemas(schemas);
+        int added = 0;
+        int revived = 0;
         for (LineageEdgeEntity edge : discovered.values()) {
             if (!Boolean.TRUE.equals(assetExists.get(edge.getFromAssetId()))
                     || !Boolean.TRUE.equals(assetExists.get(edge.getToAssetId()))) {
                 continue;
             }
-            lineageEdgeMapper.insert(edge);
+            LineageEdgeEntity existing = lineageEdgeMapper.findLatestByFiveTuple(
+                    edge.getFromAssetId(), edge.getToAssetId(), edge.getKind(),
+                    edge.getFromColumn(), edge.getToColumn());
+            if (existing != null) {
+                lineageEdgeMapper.reviveEdge(existing.getId(), edge.getConfidence());
+                revived++;
+            } else {
+                edge.setLastSeenAt(LocalDateTime.now());
+                lineageEdgeMapper.insert(edge);
+                added++;
+            }
             result.incrementEdgesDiscovered();
-            inserted++;
         }
-        log.info("Lineage discovery for schemas {}: {} edges inserted ({} candidates)",
-                schemas, inserted, discovered.size());
+        result.setEdgesAdded(added);
+        result.setEdgesRevived(revived);
+        result.setEdgesRetired(retired);
+        log.info("Lineage discovery for schemas {}: {} added, {} revived, {} retired ({} candidates)",
+                schemas, added, revived, retired, discovered.size());
     }
 
     private List<String> listTables(DatabaseMetaData metaData, String schema) {
@@ -657,6 +674,12 @@ public class JdbcSchemaCollector {
         private int assetsCreated;
         private int assetsUpdated;
         private int edgesDiscovered;
+        /** Edges newly inserted by the latest run. */
+        private int edgesAdded;
+        /** Previously retired edges revived in place by the latest run. */
+        private int edgesRevived;
+        /** Auto-discovered edges retired by the latest run (soft-invalidated). */
+        private int edgesRetired;
         private int changesDetected;
 
         public void incrementTablesFound() { this.tablesFound++; }

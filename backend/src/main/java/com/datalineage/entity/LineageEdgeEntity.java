@@ -23,5 +23,7 @@ public class LineageEdgeEntity {
     private Boolean isCriticalPath;
     private LocalDateTime validFrom;
     private LocalDateTime validTo;
+    /** Most recent collection run that reproduced this (auto-discovered) edge. */
+    private LocalDateTime lastSeenAt;
     private LocalDateTime createdAt;
 }

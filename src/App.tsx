@@ -34,9 +34,9 @@ import {
 } from './mock/mockData';
 import { useLineageStore } from './stores/lineageStore';
 import { adaptAsset, adaptEdge, adaptChange, adaptMetric } from './services/adapters';
-import { ruleApi, notificationApi, metricApi, contractApi } from './services/api';
+import { ruleApi, notificationApi, metricApi, contractApi, lineageApi } from './services/api';
 import { AuthGuard, useAuth, logout } from './components/AuthGuard';
-import { UserRole, ValidationRule, QualityIssue, NotificationItem, MetricDefinition, ContractFile } from './types/lineage';
+import { UserRole, ValidationRule, QualityIssue, NotificationItem, MetricDefinition, ContractFile, LineageEdge } from './types/lineage';
 
 function AppShell() {
   const auth = useAuth();
@@ -47,9 +47,11 @@ function AppShell() {
   const [simulateAssetId, setSimulateAssetId] = useState<string>('asset:ods_crm_customer');
   const [contractRef, setContractRef] = useState<string>('contracts/crm/customer.yaml');
 
-  // Time travel historical replay state
+  // Time travel historical replay state: the date defaults to today ("now" snapshot),
+  // and while active the edge set is fetched from the bitemporal replay API.
   const [isTimeTravelActive, setIsTimeTravelActive] = useState<boolean>(false);
-  const timeTravelDate = '2026-08-01';
+  const [timeTravelDate, setTimeTravelDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [replayEdges, setReplayEdges] = useState<LineageEdge[] | null>(null);
 
   // Modals
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
@@ -90,6 +92,28 @@ function AppShell() {
     [remoteEdges, remoteAssetIds],
   );
   const mappedRemoteChanges = useMemo(() => remoteChanges.map(adaptChange), [remoteChanges]);
+
+  // Fetch the historical edge snapshot whenever replay mode is on or the date changes
+  useEffect(() => {
+    if (!isTimeTravelActive) {
+      setReplayEdges(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const resp = await lineageApi.edgesAtTime(`${timeTravelDate}T23:59:59`);
+        if (cancelled) return;
+        const mapped = ((resp as any)?.edges ?? [])
+          .map(adaptEdge)
+          .filter((e: LineageEdge) => remoteAssetIds.has(e.from) && remoteAssetIds.has(e.to));
+        setReplayEdges(mapped);
+      } catch {
+        if (!cancelled) setReplayEdges(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isTimeTravelActive, timeTravelDate, remoteAssetIds]);
 
   // Real data wins once the backend has collected assets; mock keeps demos alive otherwise
   const hasRealData = mappedRemoteAssets.length > 0;
@@ -272,7 +296,7 @@ function AppShell() {
           {activeTab === 'lineage' && (
             <M2LineageExplorer
               assets={assets}
-              edges={edges}
+              edges={isTimeTravelActive && replayEdges ? replayEdges : edges}
               initialFocusId={selectedAssetId || 'asset:ods_crm_customer'}
               isTimeTravelActive={isTimeTravelActive}
               timeTravelDate={timeTravelDate}

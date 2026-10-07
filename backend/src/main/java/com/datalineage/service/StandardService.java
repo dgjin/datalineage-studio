@@ -41,6 +41,7 @@ public class StandardService {
     private final ReferenceCodeMapper referenceCodeMapper;
     private final AssetMapper assetMapper;
     private final QualityIssueMapper qualityIssueMapper;
+    private final WebhookService webhookService;
 
     // ---- Standards ----
 
@@ -265,6 +266,13 @@ public class StandardService {
             if (std.getRuleExpr() == null || std.getRuleExpr().isBlank()) {
                 continue;
             }
+            // Scope guard: a layer-bound standard (domain = ODS/DWD/DWS/ADS/APP)
+            // only applies to assets of that layer; '全平台' standards apply to all.
+            String scope = std.getDomain();
+            if (scope != null && !scope.isBlank() && !"全平台".equals(scope)
+                    && !scope.equalsIgnoreCase(asset.getLayer())) {
+                continue;
+            }
             boolean matched;
             try {
                 matched = Pattern.compile(std.getRuleExpr()).matcher(asset.getName()).matches();
@@ -334,5 +342,15 @@ public class StandardService {
 
         std.setHitCount((std.getHitCount() == null ? 0 : std.getHitCount()) + 1);
         standardMapper.updateById(std);
+
+        // Push the violation to external subscribers (CI/CD webhooks).
+        Map<String, Object> webhookPayload = new LinkedHashMap<>();
+        webhookPayload.put("issueCode", issueCode);
+        webhookPayload.put("standardCode", std.getCode());
+        webhookPayload.put("assetId", asset.getId());
+        webhookPayload.put("assetName", asset.getName());
+        webhookPayload.put("priority", issue.getPriority());
+        webhookPayload.put("createdAt", java.time.LocalDateTime.now().toString());
+        webhookService.publish(WebhookService.EVENT_STANDARD_VIOLATION, webhookPayload);
     }
 }

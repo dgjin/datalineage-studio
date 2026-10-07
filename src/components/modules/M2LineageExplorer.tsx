@@ -364,8 +364,8 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
         <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-1.5 flex items-center justify-between text-xs text-amber-300">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-amber-400 animate-spin" />
-            <span className="font-semibold">历史时点回放中 (Bi-temporal Time-Travel Replay) @ {timeTravelDate}</span>
-            <span className="text-amber-400/80">此为快照视图，正在展示破坏性变更发生前的数据血缘状态</span>
+            <span className="font-semibold">历史时点回放中 (Bi-temporal Time-Travel Replay) @ {timeTravelDate} · {edges.length} 条边</span>
+            <span className="text-amber-400/80">此为快照视图，正在展示指定时点的数据血缘状态</span>
           </div>
           <span className="text-[11px] font-mono bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">只读不可修改</span>
         </div>

@@ -30,6 +30,9 @@ public class CollectorRunLogEntity {
     private Integer edgesDiscovered;
     @TableField(typeHandler = JacksonTypeHandler.class)
     private List<Map<String, Object>> errors;
+    /** Structured run detail: retry attempts, edges added/revived/retired. */
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private Map<String, Object> detail;
     private String logText;
     private LocalDateTime createdAt;
 }

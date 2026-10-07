@@ -1,5 +1,6 @@
 package com.datalineage.controller;
 
+import com.datalineage.audit.AuditLog;
 import com.datalineage.dto.ApiResponse;
 import com.datalineage.entity.CollectorRunLogEntity;
 import com.datalineage.entity.MetadataCollectTaskEntity;
@@ -55,6 +56,7 @@ public class CollectTaskController {
     }
 
     @PostMapping("/{id}/run")
+    @AuditLog(action = "COLLECT_RUN", resourceType = "COLLECT_TASK", summary = "手动触发元数据采集")
     @Operation(summary = "手动触发采集（异步，立即返回）")
     public ApiResponse<Map<String, Object>> runTask(@PathVariable String id) {
         return ApiResponse.success(collectorService.runTask(id), "Collection started");

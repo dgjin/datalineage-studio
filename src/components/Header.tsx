@@ -28,6 +28,7 @@ interface HeaderProps {
   isTimeTravelActive: boolean;
   onToggleTimeTravel: () => void;
   timeTravelDate: string;
+  onTimeTravelDateChange?: (date: string) => void;
   notifications: NotificationItem[];
   onOpenNotifications: () => void;
   onOpenDesignDoc: () => void;
@@ -44,6 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
   isTimeTravelActive,
   onToggleTimeTravel,
   timeTravelDate,
+  onTimeTravelDateChange,
   notifications,
   onOpenNotifications,
   onOpenDesignDoc,
@@ -141,6 +143,18 @@ export const Header: React.FC<HeaderProps> = ({
           <Clock className="w-3.5 h-3.5 text-amber-400" />
           <span className="hidden lg:inline">{isTimeTravelActive ? `历史模式 @ ${timeTravelDate}` : '时点回放'}</span>
         </button>
+
+        {/* Replay date picker: only visible while time travel mode is active */}
+        {isTimeTravelActive && onTimeTravelDateChange && (
+          <input
+            type="date"
+            value={timeTravelDate}
+            max={new Date().toISOString().slice(0, 10)}
+            onChange={(e) => onTimeTravelDateChange(e.target.value)}
+            className="px-2 py-1 text-xs rounded-md bg-amber-500/10 border border-amber-500/40 text-amber-200 focus:outline-none"
+            title="选择历史回放日期 (Bi-temporal Replay Date)"
+          />
+        )}
 
         {/* Notifications Icon with Badge */}
         <button

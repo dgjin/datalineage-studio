@@ -26,6 +26,9 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: true
+    # Parallel workstreams may add migrations below the latest applied version
+    # (e.g. V15 after V16); allow Flyway to apply them in a later run.
+    out-of-order: true
   
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss

@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +43,12 @@ public class CollectorService {
     private final JdbcSchemaCollector jdbcSchemaCollector;
     private final ThreadPoolTaskExecutor collectTaskExecutor;
     private final GovernanceMetrics governanceMetrics;
+    private final StandardService standardService;
+
+    /** Collection attempts per run before the run is declared FAILED. */
+    private static final int MAX_COLLECT_ATTEMPTS = 3;
+    /** Exponential-backoff delays between attempts (attempt 1 -> 2s, attempt 2 -> 8s). */
+    private static final long[] RETRY_BACKOFF_MS = {2_000L, 8_000L};
 
     private ThreadPoolTaskScheduler scheduler;
     private final Map<String, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
@@ -212,14 +219,37 @@ public class CollectorService {
             log.warn("Collect task {} vanished before execution", taskId);
             return;
         }
+        int attempts = 0;
         try {
-            JdbcSchemaCollector.CollectResult result = jdbcSchemaCollector.collect(task, (percent, phase) -> {
-                LiveProgress p = liveProgress.get(taskId);
-                if (p != null) {
-                    p.setPercent(percent);
-                    p.setPhase(phase);
+            // Exponential-backoff retry: transient failures (network blips, source briefly
+            // unavailable) are retried up to MAX_COLLECT_ATTEMPTS before the run is marked
+            // FAILED. The collector is idempotent (assets upserted by code), so repeating
+            // a partially applied attempt is safe.
+            JdbcSchemaCollector.CollectResult result = null;
+            for (int attempt = 1; attempt <= MAX_COLLECT_ATTEMPTS; attempt++) {
+                attempts = attempt;
+                result = jdbcSchemaCollector.collect(task, (percent, phase) -> {
+                    LiveProgress p = liveProgress.get(taskId);
+                    if (p != null) {
+                        p.setPercent(percent);
+                        p.setPhase(phase);
+                    }
+                });
+                if (result.isSuccess()) {
+                    break;
                 }
-            });
+                if (attempt < MAX_COLLECT_ATTEMPTS) {
+                    log.warn("Collection attempt {}/{} failed for task {}: {} — retrying in {}ms",
+                            attempt, MAX_COLLECT_ATTEMPTS, taskId, result.getErrorMessage(),
+                            RETRY_BACKOFF_MS[attempt - 1]);
+                    LiveProgress p = liveProgress.get(taskId);
+                    if (p != null) {
+                        p.setPhase("第 " + attempt + " 次尝试失败，退避 "
+                                + (RETRY_BACKOFF_MS[attempt - 1] / 1000) + "s 后重试");
+                    }
+                    Thread.sleep(RETRY_BACKOFF_MS[attempt - 1]);
+                }
+            }
 
             LocalDateTime endTime = LocalDateTime.now();
             runLog.setEndTime(endTime);
@@ -234,6 +264,8 @@ public class CollectorService {
                 runLog.setErrors(List.of(Map.of("message",
                         result.getErrorMessage() == null ? "Unknown error" : result.getErrorMessage())));
             }
+            runLog.setDetail(buildRunDetail(attempts, result.isSuccess(),
+                    result.getEdgesAdded(), result.getEdgesRevived(), result.getEdgesRetired()));
             runLog.setLogText(buildRunSummary(result));
             runLogMapper.updateById(runLog);
 
@@ -246,16 +278,32 @@ public class CollectorService {
             task.setTotalColumnsFound(result.getColumnsFound());
             task.setNewAssetsRegistered(result.getAssetsCreated());
             taskMapper.updateById(task);
-            governanceMetrics.recordCollectorRun(true, runLog.getDurationMs(), result.getEdgesDiscovered());
+            governanceMetrics.recordCollectorRun(result.isSuccess(), runLog.getDurationMs(),
+                    result.getEdgesDiscovered());
 
-            log.info("Collection run {} for task {} finished: success={}, tables={}, columns={}",
-                    runLog.getId(), taskId, result.isSuccess(), result.getTablesFound(), result.getColumnsFound());
+            // Auto-enforce published naming standards after a successful collection
+            // (evaluation report gap: no automatic standard enforcement). Failures here
+            // never affect the collection outcome.
+            if (result.isSuccess() && attempts > 0) {
+                try {
+                    Map<String, Object> namingReport = standardService.executeNamingCheck();
+                    log.info("Post-collection naming enforcement: checked={}, violations={}",
+                            namingReport.get("checked"), namingReport.get("violationAssets"));
+                } catch (Exception e) {
+                    log.warn("Post-collection naming enforcement failed: {}", e.getMessage());
+                }
+            }
+
+            log.info("Collection run {} for task {} finished: success={}, attempts={}, tables={}, columns={}",
+                    runLog.getId(), taskId, result.isSuccess(), attempts,
+                    result.getTablesFound(), result.getColumnsFound());
         } catch (Exception e) {
             log.error("Collection run failed for task: {}", taskId, e);
             runLog.setEndTime(LocalDateTime.now());
             runLog.setDurationMs(Duration.between(runLog.getStartTime(), runLog.getEndTime()).toMillis());
             runLog.setStatus("FAILED");
             runLog.setErrors(List.of(Map.of("message", String.valueOf(e.getMessage()))));
+            runLog.setDetail(buildRunDetail(attempts, false, 0, 0, 0));
             runLogMapper.updateById(runLog);
 
             task.setStatus("FAILED");
@@ -396,5 +444,18 @@ public class CollectorService {
         return String.format("Schemas scanned: %d, Tables found: %d, Assets created: %d, Assets updated: %d",
                 result.getSchemasScanned(), result.getTablesFound(),
                 result.getAssetsCreated(), result.getAssetsUpdated());
+    }
+
+    /** Structured run detail persisted to collector_run_logs.detail (JSON). */
+    private Map<String, Object> buildRunDetail(int attempts, boolean success,
+                                               int edgesAdded, int edgesRevived, int edgesRetired) {
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("attempts", attempts);
+        detail.put("maxAttempts", MAX_COLLECT_ATTEMPTS);
+        detail.put("success", success);
+        detail.put("edgesAdded", edgesAdded);
+        detail.put("edgesRevived", edgesRevived);
+        detail.put("edgesRetired", edgesRetired);
+        return detail;
     }
 }

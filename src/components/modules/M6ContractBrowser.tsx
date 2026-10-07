@@ -75,6 +75,8 @@ export const M6ContractBrowser: React.FC<M6ContractBrowserProps> = ({
   const [activeView, setActiveView] = useState<'YAML' | 'DDL' | 'CI_CHECKS'>('YAML');
   const [copiedText, setCopiedText] = useState(false);
   const [yamlCheck, setYamlCheck] = useState<{ valid: boolean; errors: string[] } | null>(null);
+  const [schemaCheck, setSchemaCheck] = useState<any | null>(null);
+  const [schemaChecking, setSchemaChecking] = useState(false);
 
   // Keep a valid selection when the contract list arrives from the API.
   useEffect(() => {
@@ -103,6 +105,25 @@ export const M6ContractBrowser: React.FC<M6ContractBrowserProps> = ({
     const m = selectedContract?.yamlContent?.match(/assetId:\s*(asset:[^\s]+)/);
     return m ? m[1] : null;
   }, [selectedContract?.yamlContent]);
+
+  // Contract vs schema check: declared columns compared with the bound asset's
+  // actual columns via POST /contracts/{id}/validate-schema
+  const runSchemaCheck = async () => {
+    if (!selectedContract || selectedContract.id.startsWith('fallback:')) return;
+    setSchemaChecking(true);
+    setSchemaCheck(null);
+    try {
+      const report = await contractApi.validateSchema(selectedContract.id);
+      setSchemaCheck(report);
+    } catch (e: any) {
+      setSchemaCheck({ valid: false, reason: `校验请求失败: ${e.message}` });
+    } finally {
+      setSchemaChecking(false);
+    }
+  };
+
+  // Clear stale schema-check results when switching contracts
+  useEffect(() => { setSchemaCheck(null); }, [selectedId]);
 
   const domains = useMemo(() => [...new Set(files.map(f => f.domain))], [files]);
 
@@ -241,6 +262,15 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
               <span>CI 影响预演</span>
             </button>
             <button
+              disabled={!selectedContract || selectedContract.id.startsWith('fallback:') || schemaChecking}
+              onClick={runSchemaCheck}
+              title="契约声明字段 vs 资产实际 schema 对比（缺失字段/类型不符/覆盖度）"
+              className="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-xs font-medium flex items-center gap-1.5 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <FileCheck2 className="w-3.5 h-3.5" />
+              <span>{schemaChecking ? '校验中…' : '对照资产校验'}</span>
+            </button>
+            <button
               onClick={() => handleCopy(activeView === 'YAML' ? (selectedContract?.yamlContent || SAMPLE_CONTRACT_YAML) : (selectedContract?.generatedDdl || sampleDdl))}
               className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center gap-1.5 transition"
             >
@@ -277,6 +307,40 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
             MR CI 检查项面板
           </button>
         </div>
+
+        {/* Contract-vs-schema consistency result strip */}
+        {schemaCheck && (
+          <div className={`px-4 py-2 border-b text-xs flex items-start gap-2 ${
+            schemaCheck.valid
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+              : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+          }`}>
+            {schemaCheck.valid
+              ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+              : <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />}
+            <div className="space-y-0.5">
+              {schemaCheck.reason ? (
+                <p className="font-medium">{schemaCheck.reason}</p>
+              ) : schemaCheck.valid ? (
+                <p className="font-medium">
+                  结构一致：{schemaCheck.assetName}（{schemaCheck.assetCode}）· {schemaCheck.matchedColumns}/{schemaCheck.contractColumnCount} 字段匹配
+                  {schemaCheck.missingInContract?.length > 0 && ` · 契约未覆盖 ${schemaCheck.missingInContract.length} 个资产字段（覆盖度提示）`}
+                </p>
+              ) : (
+                <>
+                  <p className="font-medium">
+                    结构不一致：{schemaCheck.assetName} · 契约声明 {schemaCheck.contractColumnCount} 字段 / 资产实际 {schemaCheck.assetColumnCount} 字段
+                  </p>
+                  <p>
+                    {schemaCheck.missingInAsset?.length > 0 && `资产缺失字段 ${schemaCheck.missingInAsset.length} 个（${schemaCheck.missingInAsset.map((c: any) => c.column).slice(0, 4).join(', ')}${schemaCheck.missingInAsset.length > 4 ? '…' : ''}）；`}
+                    {schemaCheck.typeMismatch?.length > 0 && `类型不符 ${schemaCheck.typeMismatch.length} 个（${schemaCheck.typeMismatch.map((c: any) => `${c.column}: ${c.contractType}≠${c.assetType}`).slice(0, 3).join('; ')}）；`}
+                    {schemaCheck.missingInContract?.length > 0 && `契约未覆盖 ${schemaCheck.missingInContract.length} 个资产字段`}
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Content Viewer */}
         <div className="flex-1 overflow-y-auto p-4">

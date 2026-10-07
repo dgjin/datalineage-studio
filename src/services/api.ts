@@ -110,6 +110,10 @@ export const lineageApi = {
   
   findPath: (from: string, to: string) => 
     apiFetch<any[]>(`/lineage/path?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
+
+  // Bi-temporal replay: edges valid at the given timestamp (yyyy-MM-dd or ISO date-time)
+  edgesAtTime: (time: string) =>
+    apiFetch<{ time: string; edges: any[]; edgeCount: number }>(`/lineage/edges/at-time?time=${encodeURIComponent(time)}`),
   
   getSubgraph: (params: { rootId: string; depth?: number; direction?: 'UPSTREAM' | 'DOWNSTREAM' | 'BOTH' }) => {
     const query = new URLSearchParams(params as any).toString();
@@ -310,6 +314,11 @@ export const contractApi = {
   validate: (yamlContent: string) => apiFetch<any>('/contracts/validate', {
     method: 'POST',
     body: JSON.stringify({ yamlContent }),
+  }),
+
+  // Contract declared columns vs actual asset schema (contract-vs-schema consistency)
+  validateSchema: (id: string) => apiFetch<any>(`/contracts/${encodeURIComponent(id)}/validate-schema`, {
+    method: 'POST',
   }),
 };
 
@@ -539,6 +548,42 @@ export const modelApi = {
   diff: (id: string) => apiFetch<any>(`/models/${id}/diff`),
 };
 
+// Audit trail API (full-chain write-operation audit)
+export const auditApi = {
+  query: (params?: { username?: string; action?: string; resourceType?: string; result?: string; from?: string; to?: string; page?: number; size?: number }) => {
+    const query = new URLSearchParams(
+      Object.entries(params || {}).reduce((acc, [k, v]) => {
+        if (v !== undefined && v !== null && v !== '') (acc as any)[k] = String(v);
+        return acc;
+      }, {} as Record<string, string>)
+    ).toString();
+    return apiFetch<{ total: number; page: number; size: number; records: any[] }>(`/audit-logs${query ? `?${query}` : ''}`);
+  },
+};
+
+// Webhook subscription API (CI/CD change notifications)
+export const webhookApi = {
+  list: () => apiFetch<any[]>('/webhooks'),
+
+  create: (config: any) => apiFetch<any>('/webhooks', {
+    method: 'POST',
+    body: JSON.stringify(config),
+  }),
+
+  update: (id: string, config: any) => apiFetch<any>(`/webhooks/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(config),
+  }),
+
+  remove: (id: string) => apiFetch<void>(`/webhooks/${id}`, {
+    method: 'DELETE',
+  }),
+
+  test: (id: string) => apiFetch<any>(`/webhooks/${id}/test`, {
+    method: 'POST',
+  }),
+};
+
 export default {
   auth: authApi,
   asset: assetApi,
@@ -555,4 +600,6 @@ export default {
   standard: standardApi,
   approval: approvalApi,
   model: modelApi,
+  audit: auditApi,
+  webhook: webhookApi,
 };

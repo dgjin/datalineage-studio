@@ -64,4 +64,10 @@ public class ContractController {
     public ApiResponse<Map<String, Object>> validateContract(@RequestBody Map<String, String> request) {
         return ApiResponse.success(contractService.validateContractYaml(request.get("yamlContent")));
     }
+
+    @PostMapping("/{id}/validate-schema")
+    @Operation(summary = "契约 vs 资产 schema 一致性校验（字段缺失/类型不符/覆盖度）")
+    public ApiResponse<Map<String, Object>> validateAgainstSchema(@PathVariable String id) {
+        return ApiResponse.success(contractService.validateAgainstSchema(id));
+    }
 }

@@ -62,7 +62,8 @@ public class DashboardService {
         List<ChangeEventEntity> changes = changeEventMapper.selectList(null);
         List<QualityIssueEntity> issues = qualityIssueMapper.selectList(null);
         List<ValidationRuleEntity> rules = validationRuleMapper.selectList(null);
-        List<LineageEdgeEntity> edges = lineageEdgeMapper.selectList(null);
+        List<LineageEdgeEntity> edges = lineageEdgeMapper.selectList(
+                new QueryWrapper<LineageEdgeEntity>().isNull("valid_to"));
 
         Map<String, Object> overview = new LinkedHashMap<>();
         overview.put("assetTotal", assets.size());

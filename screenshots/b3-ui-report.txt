@@ -1,0 +1,14 @@
+PASS  1. M9 shows the audit-trail button
+PASS  2. audit drawer heading visible
+PASS  3. audit records rendered (27 result badges)
+   screenshot -> screenshots/b3-m9-audit-drawer.png
+PASS  4. M8 shows the webhook-config button
+PASS  5. webhook modal heading visible
+PASS  6. create form rendered
+PASS  7. event checkboxes rendered
+   screenshot -> screenshots/b3-m8-webhook-modal.png
+PASS  8. subscription appears in the list
+PASS  9. test delivery result shown inline
+   screenshot -> screenshots/b3-m8-webhook-test.png
+PASS  10. cleanup: subscription removed
+PASS  11. no console errors during the flow
