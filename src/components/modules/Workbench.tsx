@@ -83,7 +83,7 @@ export const Workbench: React.FC<WorkbenchProps> = ({
         </div>
 
         {/* Ambient background glow */}
-        <div className="absolute right-0 top-0 w-96 h-full bg-gradient-to-l from-indigo-500/10 via-cyan-500/5 to-transparent pointer-events-none" />
+        <div className="absolute right-0 top-0 w-96 h-full bg-gradient-to-l from-indigo-500/10 via-indigo-400/5 to-transparent pointer-events-none" />
       </div>
 
       {/* Operational Highlights Grid */}

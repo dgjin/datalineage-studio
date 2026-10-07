@@ -111,7 +111,7 @@ export const LineageExportModal: React.FC<LineageExportModalProps> = ({
         {/* Modal Header */}
         <div className="p-4 border-b border-slate-800 bg-slate-900/90 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 p-0.5 shadow-lg shadow-indigo-500/20">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-400 p-0.5 shadow-lg shadow-indigo-500/20">
               <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
                 <FileImage className="w-4 h-4 text-cyan-400" />
               </div>
@@ -276,7 +276,7 @@ export const LineageExportModal: React.FC<LineageExportModalProps> = ({
             <button
               onClick={handleDownload}
               disabled={isExporting}
-              className="px-5 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-semibold flex items-center gap-2 shadow-lg shadow-indigo-500/25 transition disabled:opacity-50"
+              className="px-5 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold flex items-center gap-2 shadow-lg shadow-indigo-500/25 transition disabled:opacity-50"
             >
               {isExporting ? (
                 <>

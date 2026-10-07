@@ -342,7 +342,7 @@ relationTypes:
                           </div>
                           <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-700"
+                              className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 transition-all duration-700"
                               style={{ width: `${state?.percent ?? 0}%` }}
                             />
                           </div>

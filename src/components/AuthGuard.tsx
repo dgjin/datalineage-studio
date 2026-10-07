@@ -155,7 +155,10 @@ const LoginScreen: React.FC = () => {
         <div className="hidden md:flex flex-col justify-between rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-7 shadow-2xl">
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 via-blue-600 to-cyan-400 p-0.5 shadow-lg shadow-indigo-500/20">
+              <div
+                className="w-11 h-11 rounded-xl p-0.5 shadow-lg shadow-indigo-500/20"
+                style={{ backgroundImage: 'var(--brand-gradient)' }}
+              >
                 <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
                   <Network className="w-5 h-5 text-cyan-400" />
                 </div>
@@ -231,7 +234,7 @@ const LoginScreen: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-9 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-400 hover:to-blue-500 text-white text-sm font-semibold flex items-center justify-center gap-2 transition shadow-lg shadow-indigo-500/20 disabled:opacity-60"
+              className="w-full h-9 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-sm font-semibold flex items-center justify-center gap-2 transition shadow-lg shadow-indigo-500/20 disabled:opacity-60"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
               {loading ? '登录中...' : '登 录'}

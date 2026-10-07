@@ -382,7 +382,7 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
           <button
             onClick={handleRunSimulation}
             disabled={isSimulating}
-            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-semibold text-xs transition shadow-lg shadow-indigo-500/25 disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold text-xs transition shadow-lg shadow-indigo-500/25 disabled:opacity-50"
           >
             {isSimulating ? (
               <>

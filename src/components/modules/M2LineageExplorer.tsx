@@ -817,7 +817,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
           {/* Export Graph as High-Quality SVG / PNG / Mermaid */}
           <button
             onClick={() => setIsExportModalOpen(true)}
-            className="flex items-center gap-1.5 px-2 min-[1728px]:px-3 py-1 rounded-lg bg-gradient-to-r from-indigo-600/30 to-cyan-600/30 hover:from-indigo-600/50 hover:to-cyan-600/50 border border-indigo-500/40 text-indigo-200 hover:text-white transition font-medium shadow-sm shrink-0"
+            className="flex items-center gap-1.5 px-2 min-[1728px]:px-3 py-1 rounded-lg bg-gradient-to-r from-indigo-600/30 to-indigo-400/30 hover:from-indigo-600/50 hover:to-indigo-400/50 border border-indigo-500/40 text-indigo-200 hover:text-white transition font-medium shadow-sm shrink-0"
             title="导出当前血缘图谱为高清 SVG 矢量图、PNG 或 Mermaid 架构代码"
           >
             <Download className="w-3.5 h-3.5 text-cyan-400" />
@@ -865,7 +865,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
 
               <button
                 onClick={handleCalculateShortestPath}
-                className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-semibold transition shadow-md shadow-indigo-500/20 flex items-center gap-1.5"
+                className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold transition shadow-md shadow-indigo-500/20 flex items-center gap-1.5"
               >
                 <Route className="w-3.5 h-3.5" />
                 <span>计算并高亮最短路径</span>

@@ -103,7 +103,7 @@ export const M9GovernanceDashboard: React.FC = () => {
           <button
             onClick={() => setReportModalOpen(true)}
             disabled={!data}
-            className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 disabled:opacity-40 text-white font-semibold text-xs transition shadow-lg shadow-indigo-500/20 flex items-center gap-2"
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 disabled:opacity-40 text-white font-semibold text-xs transition shadow-lg shadow-indigo-500/20 flex items-center gap-2"
           >
             <FileText className="w-4 h-4" />
             <span>一键导出治理工作周报 (Markdown)</span>

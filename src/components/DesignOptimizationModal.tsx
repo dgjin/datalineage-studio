@@ -106,7 +106,7 @@ export const DesignOptimizationModal: React.FC<DesignOptimizationModalProps> = (
         {/* Header */}
         <div className="p-5 border-b border-slate-800 bg-slate-900/90 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 p-0.5 shadow-lg shadow-indigo-500/20">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-400 p-0.5 shadow-lg shadow-indigo-500/20">
               <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-cyan-400" />
               </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Network, 
   Search, 
@@ -14,8 +14,11 @@ import {
   CheckCircle2,
   ChevronDown,
   LogOut,
-  FlaskConical
+  FlaskConical,
+  Palette
 } from 'lucide-react';
+import { THEMES, getTheme, applyTheme } from '../utils/theme';
+import type { ThemeId } from '../utils/theme';
 import { UserRole, NotificationItem } from '../types/lineage';
 import { ROLE_LABELS } from './AuthGuard';
 import type { AuthUser } from '../services/api';
@@ -59,7 +62,27 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [authMenuOpen, setAuthMenuOpen] = useState(false);
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const [theme, setThemeState] = useState<ThemeId>(() => getTheme());
+  const themeMenuRef = useRef<HTMLDivElement>(null);
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Theme menu: close whenever the click lands outside of it
+  useEffect(() => {
+    if (!themeMenuOpen) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
+        setThemeMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [themeMenuOpen]);
+
+  const handleThemeChange = (id: ThemeId) => {
+    applyTheme(id);
+    setThemeState(id);
+  };
 
   const roleLabels: Record<UserRole, { title: string; color: string }> = {
     ARCHITECT: { title: '数据架构师', color: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' },
@@ -73,9 +96,12 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="h-14 border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-4 flex items-center justify-between">
       {/* Brand & Space Switcher */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 via-blue-600 to-cyan-400 p-0.5 shadow-lg shadow-indigo-500/20">
+          <div
+            className="w-8 h-8 rounded-lg p-0.5 shadow-lg shadow-indigo-500/20"
+            style={{ backgroundImage: 'var(--brand-gradient)' }}
+          >
             <div className="w-full h-full bg-slate-950 rounded-[7px] flex items-center justify-center">
               <Network className="w-4 h-4 text-cyan-400" />
             </div>
@@ -108,27 +134,27 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Center Command Search Trigger */}
-      <div className="flex-1 max-w-md mx-4">
+      <div className="flex-1 min-w-[200px] max-w-md mx-4">
         <button 
           onClick={onOpenCommandPalette}
           className="w-full h-8 px-3 rounded-lg bg-slate-950/70 hover:bg-slate-950 border border-slate-800 hover:border-slate-700 flex items-center justify-between text-xs text-slate-400 transition group"
         >
-          <div className="flex items-center gap-2">
-            <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-400 transition" />
-            <span>输入资产名、字段 (col:phone)、指标、或规则...</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-400 transition shrink-0" />
+            <span className="truncate">输入资产名、字段 (col:phone)、指标、或规则...</span>
           </div>
-          <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-mono bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700">
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 shrink-0 ml-2 text-[10px] font-mono bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700">
             ⌘K
           </kbd>
         </button>
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 shrink-0">
         {/* Deep Optimization Report Trigger */}
         <button
           onClick={onOpenDesignDoc}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md bg-gradient-to-r from-indigo-500/20 to-blue-500/20 hover:from-indigo-500/30 hover:to-blue-500/30 text-indigo-300 border border-indigo-500/30 transition shadow-sm font-medium"
+          className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md bg-gradient-to-r from-indigo-500/25 to-indigo-400/20 hover:from-indigo-500/35 hover:to-indigo-400/30 text-indigo-300 border border-indigo-500/30 transition shadow-sm font-medium"
         >
           <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
           <span className="hidden sm:inline">设计优化演进报告</span>
@@ -177,6 +203,48 @@ export const Header: React.FC<HeaderProps> = ({
           />
         )}
 
+        {/* Theme preset switcher (accent skin, persisted) */}
+        <div className="relative" ref={themeMenuRef}>
+          <button
+            onClick={() => { setThemeMenuOpen(!themeMenuOpen); setRoleMenuOpen(false); setAuthMenuOpen(false); }}
+            className={`p-1.5 rounded-md transition ${
+              themeMenuOpen ? 'bg-slate-800 text-slate-200' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
+            title="界面主题 (Theme Presets)"
+            aria-label="切换界面主题"
+          >
+            <Palette className="w-4 h-4" />
+          </button>
+
+          {themeMenuOpen && (
+            <div className="absolute right-0 mt-1.5 w-56 rounded-lg bg-slate-900 border border-slate-800 shadow-xl py-1 z-50">
+              <div className="px-2.5 py-1 text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
+                界面主题 · 实时预览
+              </div>
+              {THEMES.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => handleThemeChange(t.id)}
+                  className={`w-full text-left px-2.5 py-1.5 text-xs flex items-center gap-2.5 hover:bg-slate-800 transition ${
+                    theme === t.id ? 'text-indigo-300 font-medium' : 'text-slate-300'
+                  }`}
+                >
+                  <span
+                    className={`w-3.5 h-3.5 rounded-full shrink-0 ${t.swatch} ${
+                      theme === t.id ? 'ring-2 ring-indigo-400/70 ring-offset-1 ring-offset-slate-900' : 'opacity-80'
+                    }`}
+                  />
+                  <span className="flex-1 min-w-0">
+                    <span className="block truncate">{t.label}</span>
+                    <span className="block text-[10px] text-slate-500 truncate">{t.desc}</span>
+                  </span>
+                  {theme === t.id && <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-indigo-400" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Notifications Icon with Badge */}
         <button
           onClick={onOpenNotifications}
@@ -192,7 +260,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* User Role Switcher (demo persona switcher) */}
         <div className="relative">
           <button 
-            onClick={() => setRoleMenuOpen(!roleMenuOpen)}
+            onClick={() => { setRoleMenuOpen(!roleMenuOpen); setAuthMenuOpen(false); setThemeMenuOpen(false); }}
             className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border transition ${roleLabels[currentUserRole].color}`}
           >
             <UserCheck className="w-3.5 h-3.5" />
@@ -228,7 +296,7 @@ export const Header: React.FC<HeaderProps> = ({
         {authUser && (
           <div className="relative">
             <button
-              onClick={() => { setAuthMenuOpen(!authMenuOpen); setRoleMenuOpen(false); }}
+              onClick={() => { setAuthMenuOpen(!authMenuOpen); setRoleMenuOpen(false); setThemeMenuOpen(false); }}
               className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border transition ${ROLE_LABELS[authUser.role].color}`}
               title={`已登录：@${authUser.username}`}
             >

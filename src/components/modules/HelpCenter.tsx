@@ -399,7 +399,7 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
         </div>
 
         {/* Ambient glow */}
-        <div className="absolute right-0 top-0 w-96 h-full bg-gradient-to-l from-indigo-500/10 via-cyan-500/5 to-transparent pointer-events-none" />
+        <div className="absolute right-0 top-0 w-96 h-full bg-gradient-to-l from-indigo-500/10 via-indigo-400/5 to-transparent pointer-events-none" />
         <LifeBuoy className="absolute -right-6 -bottom-8 w-40 h-40 text-indigo-500/5 pointer-events-none" />
       </div>
 
