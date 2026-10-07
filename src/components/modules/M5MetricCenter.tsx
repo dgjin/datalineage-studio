@@ -91,7 +91,7 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
         {/* Header */}
         <div className="p-4 border-b border-slate-800 bg-slate-900/60 space-y-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-base font-bold text-white flex items-center gap-2">
+            <h1 className="text-base font-bold text-slate-100 flex items-center gap-2">
               <Binary className="w-5 h-5 text-cyan-400" />
               <span>M5 指标中心与三级溯源</span>
             </h1>
@@ -111,7 +111,7 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="搜索指标名、编码 (MET-...)、或口径..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
             />
           </div>
 
@@ -201,7 +201,7 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
                 <span className="font-mono text-xs px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                   {selectedMetric.code}
                 </span>
-                <h2 className="text-lg font-bold text-white">{selectedMetric.name}</h2>
+                <h2 className="text-lg font-bold text-slate-100">{selectedMetric.name}</h2>
                 <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300">
                   版本: {selectedMetric.version}
                 </span>
@@ -224,7 +224,7 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
           {/* Level 1: Caliber Card */}
           <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
                 <FileText className="w-4 h-4 text-cyan-400" />
                 <span>一级：业务口径定义卡 (Business Caliber Card)</span>
               </h3>
@@ -262,7 +262,7 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
 
           {/* Level 2: Computation Logic DAG */}
           <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
               <GitFork className="w-4 h-4 text-indigo-400" />
               <span>二级：计算逻辑依赖 DAG (Computation Dependency DAG)</span>
             </h3>
@@ -290,7 +290,7 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
           {/* Level 3: Physical Column Mapping */}
           <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
                 <Layers className="w-4 h-4 text-emerald-400" />
                 <span>三级：底层物理字段映射落点 (Physical Column Mapping)</span>
               </h3>
@@ -307,7 +307,7 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
                       #{idx + 1}
                     </span>
                     <div>
-                      <div className="font-mono text-white font-semibold flex items-center gap-1.5">
+                      <div className="font-mono text-slate-100 font-semibold flex items-center gap-1.5">
                         <span>{ref.assetName}</span>
                         <ArrowRight className="w-3 h-3 text-slate-500" />
                         <span className="text-emerald-400">{ref.columnName}</span>
@@ -336,7 +336,7 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
           {selectedHistory && selectedHistory.length > 0 && (
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
                   <History className="w-4 h-4 text-amber-400" />
                   <span>口径版本演进历史与历史数据可比性评估</span>
                 </h3>
@@ -347,7 +347,7 @@ export const M5MetricCenter: React.FC<M5MetricCenterProps> = ({
                   <div key={i} className="p-3 bg-slate-950 rounded-lg border border-slate-800 space-y-2 text-xs">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-white">{h.version}</span>
+                        <span className="font-mono font-bold text-slate-100">{h.version}</span>
                         <span className="text-[10px] text-slate-400">{h.date}</span>
                       </div>
                       {h.breakingHistoryData && (

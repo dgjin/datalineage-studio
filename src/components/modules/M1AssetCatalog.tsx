@@ -153,7 +153,7 @@ export const M1AssetCatalog: React.FC<M1AssetCatalogProps> = ({
         <div className="p-4 border-b border-slate-800 bg-slate-900/60 space-y-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h1 className="text-base font-bold text-white flex items-center gap-2">
+              <h1 className="text-base font-bold text-slate-100 flex items-center gap-2">
                 <Database className="w-5 h-5 text-indigo-400" />
                 <span>M1 统一数据资产目录</span>
                 <span className="text-xs font-normal text-slate-400 font-mono">({filteredAssets.length} 项)</span>
@@ -180,7 +180,7 @@ export const M1AssetCatalog: React.FC<M1AssetCatalogProps> = ({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="搜索资产名、描述、口径、Owner，或输入 col:字段名..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
               />
               {searchTerm && (
                 <button onClick={() => setSearchTerm('')} className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
@@ -379,7 +379,7 @@ export const M1AssetCatalog: React.FC<M1AssetCatalogProps> = ({
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
                   {selectedAsset.layer}
                 </span>
-                <span className="text-sm font-bold text-white truncate">{selectedAsset.name}</span>
+                <span className="text-sm font-bold text-slate-100 truncate">{selectedAsset.name}</span>
               </div>
               <p className="text-xs text-slate-400 truncate mt-0.5">{selectedAsset.displayTitle}</p>
             </div>
@@ -650,7 +650,7 @@ export const M1AssetCatalog: React.FC<M1AssetCatalogProps> = ({
                           {iss.priority}
                         </span>
                       </div>
-                      <h5 className="font-semibold text-white">{iss.title}</h5>
+                      <h5 className="font-semibold text-slate-100">{iss.title}</h5>
                       <p className="text-slate-400 text-[11px]">{iss.description}</p>
                       <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
                         <span>责任: {iss.ownerDept}</span>
@@ -686,7 +686,7 @@ export const M1AssetCatalog: React.FC<M1AssetCatalogProps> = ({
                     placeholder="输入协作留言或口径讨论 (支持 @人)..."
                     value={commentInput}
                     onChange={(e) => setCommentInput(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                   />
                   <button
                     onClick={handleAddComment}

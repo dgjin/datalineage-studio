@@ -76,7 +76,7 @@ export const M9GovernanceDashboard: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
         <div>
-          <h1 className="text-lg font-bold text-white flex items-center gap-2">
+          <h1 className="text-lg font-bold text-slate-100 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-indigo-400" />
             <span>M9 治理运营看板与工作汇报驾驶舱</span>
           </h1>
@@ -176,7 +176,7 @@ export const M9GovernanceDashboard: React.FC = () => {
                 <span className="font-semibold uppercase tracking-wider text-[11px]">治理覆盖率</span>
                 <Users className="w-4 h-4 text-cyan-400" />
               </div>
-              <div className="text-2xl font-bold font-mono text-white">{data.governance.contractCoverage}%</div>
+              <div className="text-2xl font-bold font-mono text-slate-100">{data.governance.contractCoverage}%</div>
               <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800">
                 <span>契约绑定率 ｜ Owner <strong className="text-cyan-400">{data.governance.ownerCoverage}%</strong></span>
                 <span>标准 {data.governance.standardPublished}/{data.governance.standardTotal}</span>
@@ -188,7 +188,7 @@ export const M9GovernanceDashboard: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Layer distribution */}
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3 text-xs">
-              <h3 className="font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <h3 className="font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
                 <Layers className="w-4 h-4 text-indigo-400" />
                 数仓分层纳管明细 (Layer Breakdown)
               </h3>
@@ -228,7 +228,7 @@ export const M9GovernanceDashboard: React.FC = () => {
 
             {/* Risk assets + zombie assets */}
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3 text-xs">
-              <h3 className="font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <h3 className="font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-400" />
                 风险资产 TOP5（按健康分升序）
               </h3>
@@ -268,7 +268,7 @@ export const M9GovernanceDashboard: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Change closure baseline */}
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3 text-xs">
-              <h3 className="font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <h3 className="font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
                 <Activity className="w-4 h-4 text-emerald-400" />
                 变更闭环与暗改防范治理基线
               </h3>
@@ -300,7 +300,7 @@ export const M9GovernanceDashboard: React.FC = () => {
 
             {/* Standards & lineage */}
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3 text-xs">
-              <h3 className="font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <h3 className="font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-cyan-400" />
                 标准中枢与血缘资产盘点
               </h3>
@@ -330,7 +330,7 @@ export const M9GovernanceDashboard: React.FC = () => {
           {/* Top rule hits */}
           {data.quality.topRules?.length > 0 && (
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3 text-xs">
-              <h3 className="font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <h3 className="font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-amber-400" />
                 规则命中 TOP{data.quality.topRules.length}（校验前移热点）
               </h3>
@@ -369,7 +369,7 @@ export const M9GovernanceDashboard: React.FC = () => {
           <div className="w-full max-w-xl bg-slate-900 border-l border-slate-700 shadow-2xl flex flex-col">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2">
                   <ScrollText className="w-4 h-4 text-cyan-400" />
                   <span>全链路审计轨迹</span>
                 </h3>
@@ -377,7 +377,7 @@ export const M9GovernanceDashboard: React.FC = () => {
                   所有写操作（POST/PUT/DELETE）自动留痕：操作者 / 动作 / 资源 / 结果 / 耗时
                 </p>
               </div>
-              <button onClick={() => setAuditDrawerOpen(false)} className="text-slate-400 hover:text-white p-1">
+              <button onClick={() => setAuditDrawerOpen(false)} className="text-slate-400 hover:text-slate-100 p-1">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -450,10 +450,10 @@ export const M9GovernanceDashboard: React.FC = () => {
           <div className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-5 space-y-4 text-xs">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
-                <h3 className="font-bold text-white text-sm">治理工作周报预览 (Markdown 导出)</h3>
+                <h3 className="font-bold text-slate-100 text-sm">治理工作周报预览 (Markdown 导出)</h3>
                 <p className="text-slate-400 text-[11px] mt-0.5">基于实时治理数据生成，可直接复制发往数据治理委员会与管理层汇报</p>
               </div>
-              <button onClick={() => setReportModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+              <button onClick={() => setReportModalOpen(false)} className="text-slate-400 hover:text-slate-100">✕</button>
             </div>
 
             <pre className="p-3.5 bg-slate-950 rounded-lg text-slate-200 font-mono text-xs overflow-x-auto border border-slate-800 max-h-80 leading-relaxed whitespace-pre-wrap">
@@ -516,7 +516,7 @@ const MiniStat: React.FC<{ label: string; value: React.ReactNode; hint?: string 
 }) => (
   <div className="p-2.5 bg-slate-950 rounded-lg border border-slate-800">
     <span className="text-[10px] text-slate-400 block">{label}</span>
-    <span className="font-mono font-bold text-white text-base block pt-0.5">{value}</span>
+    <span className="font-mono font-bold text-slate-100 text-base block pt-0.5">{value}</span>
     {hint && <span className="text-[9px] text-slate-500 block">{hint}</span>}
   </div>
 );

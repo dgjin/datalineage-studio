@@ -358,7 +358,7 @@ export const M11DataSourceManager: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
         <div>
-          <h1 className="text-lg font-bold text-white flex items-center gap-2">
+          <h1 className="text-lg font-bold text-slate-100 flex items-center gap-2">
             <Database className="w-5 h-5 text-indigo-400" />
             <span>M11 数据源与元数据采集管理</span>
           </h1>
@@ -457,7 +457,7 @@ cd backend && ./start.sh`}
                         <HardDrive className="w-4.5 h-4.5 text-indigo-400" />
                       </div>
                       <div className="min-w-0">
-                        <div className="font-semibold text-sm text-white truncate">{ds.name}</div>
+                        <div className="font-semibold text-sm text-slate-100 truncate">{ds.name}</div>
                         <div className="text-[11px] text-slate-400 font-mono truncate">
                           {ds.host}:{ds.port}/{ds.databaseName}
                         </div>
@@ -566,7 +566,7 @@ cd backend && ./start.sh`}
                 <div key={task.id} className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="font-semibold text-sm text-white flex items-center gap-2">
+                      <div className="font-semibold text-sm text-slate-100 flex items-center gap-2">
                         <Play className="w-3.5 h-3.5 text-indigo-400" />
                         {task.taskName}
                         {statusBadge(task.status)}
@@ -687,7 +687,7 @@ cd backend && ./start.sh`}
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
             <div className="flex items-center justify-between p-4 border-b border-slate-800">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                 {editingDsId ? <Pencil className="w-4 h-4 text-indigo-400" /> : <Database className="w-4 h-4 text-indigo-400" />}
                 {editingDsId ? '编辑数据源' : '新建数据源'}
               </h3>
@@ -803,7 +803,7 @@ cd backend && ./start.sh`}
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
             <div className="flex items-center justify-between p-4 border-b border-slate-800">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                 <Play className="w-4 h-4 text-indigo-400" />
                 创建采集任务
               </h3>

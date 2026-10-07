@@ -226,7 +226,7 @@ relationTypes:
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
         <div>
-          <h1 className="text-lg font-bold text-white flex items-center gap-2">
+          <h1 className="text-lg font-bold text-slate-100 flex items-center gap-2">
             <Cpu className="w-5 h-5 text-indigo-400" />
             <span>M10 采集适配器与元模型扩展引擎</span>
           </h1>
@@ -303,7 +303,7 @@ relationTypes:
                     <div key={task.id} className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl space-y-3 text-xs">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <h4 className="font-bold text-white text-[13px] truncate">{task.taskName}</h4>
+                          <h4 className="font-bold text-slate-100 text-[13px] truncate">{task.taskName}</h4>
                           <span className="text-[10px] text-slate-400 font-mono block mt-0.5 truncate">
                             {dsNames[task.dataSourceId] || (task.dataSourceId || '').slice(0, 12)}
                             {task.targetSchemas && task.targetSchemas.length > 0 ? ` ｜ ${task.targetSchemas.join(', ')}` : ''}
@@ -317,7 +317,7 @@ relationTypes:
                       <div className="grid grid-cols-3 gap-2 bg-slate-950 p-2 rounded-lg border border-slate-800 text-[10px]">
                         <div>
                           <span className="text-slate-400 block">扫描表 / 列</span>
-                          <span className="font-mono font-bold text-white">{task.totalTablesFound ?? 0} / {task.totalColumnsFound ?? 0}</span>
+                          <span className="font-mono font-bold text-slate-100">{task.totalTablesFound ?? 0} / {task.totalColumnsFound ?? 0}</span>
                         </div>
                         <div>
                           <span className="text-slate-400 block">新增资产</span>
@@ -431,7 +431,7 @@ relationTypes:
                       <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-indigo-300 font-semibold">
                         {col.mode}
                       </span>
-                      <h3 className="font-bold text-white text-sm">{col.name}</h3>
+                      <h3 className="font-bold text-slate-100 text-sm">{col.name}</h3>
                     </div>
                     <span className="text-[10px] text-slate-400 font-mono block mt-1">
                       类型: {col.type} ｜ 最近同步: {col.lastRunTime}
@@ -446,7 +446,7 @@ relationTypes:
                 <div className="grid grid-cols-3 gap-2 bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-[11px]">
                   <div>
                     <span className="text-slate-400 block">纳管资产数</span>
-                    <span className="font-mono font-bold text-white">{col.totalAssetsDiscovered}</span>
+                    <span className="font-mono font-bold text-slate-100">{col.totalAssetsDiscovered}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">24h 捕获变更</span>
@@ -500,7 +500,7 @@ relationTypes:
       {activeTab === 'METAMODEL' && (
         <div className="space-y-4 text-xs">
           <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-2">
-            <h3 className="font-bold text-white text-sm">
+            <h3 className="font-bold text-slate-100 text-sm">
               动态元模型配置示例 (Dynamic Meta-Model Configuration)
             </h3>
             <p className="text-slate-400">

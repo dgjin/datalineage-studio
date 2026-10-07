@@ -291,7 +291,7 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
       {/* Top Banner Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
         <div>
-          <h1 className="text-lg font-bold text-white flex items-center gap-2">
+          <h1 className="text-lg font-bold text-slate-100 flex items-center gap-2">
             <AlertOctagon className="w-5 h-5 text-amber-400" />
             <span>M3 变更影响分析与 What-If 模拟器</span>
           </h1>
@@ -322,7 +322,7 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
             <select
               value={selectedAssetId}
               onChange={(e) => setSelectedAssetId(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
             >
               {assets.map(a => (
                 <option key={a.id} value={a.id}>
@@ -338,7 +338,7 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
             <select
               value={changeType}
               onChange={(e) => setChangeType(e.target.value as any)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
             >
               <option value="DROP_COLUMN">DROP_COLUMN (删除物理列 - 破坏性)</option>
               <option value="RENAME_COLUMN">RENAME_COLUMN (重命名物理列 - 破坏性)</option>
@@ -356,7 +356,7 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
               <select
                 value={selectedColumn}
                 onChange={(e) => setSelectedColumn(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
               >
                 {columns.map(c => (
                   <option key={c.id} value={c.name}>
@@ -421,7 +421,7 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-slate-400">波及深度指数 (Blast Radius):</span>
-                <span className="font-mono font-bold text-white px-2 py-0.5 rounded bg-slate-950/80 border border-slate-800">
+                <span className="font-mono font-bold text-slate-100 px-2 py-0.5 rounded bg-slate-950/80 border border-slate-800">
                   {report.score} / 100
                 </span>
               </div>
@@ -436,7 +436,7 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
             {/* Direct Affected Objects with Ack Workflow */}
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
                   <User className="w-4 h-4 text-indigo-400" />
                   <span>受影响资产与 Owner 确认工作台 ({report.directImpacts.length})</span>
                 </h3>
@@ -454,7 +454,7 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
                           <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
                             {item.type}
                           </span>
-                          <span className="font-semibold text-xs text-white">{item.objectName}</span>
+                          <span className="font-semibold text-xs text-slate-100">{item.objectName}</span>
                         </div>
                         <div className="text-[11px] text-slate-400 mt-1">
                           依赖机制: <span className="text-slate-300">{item.via}</span>
@@ -506,7 +506,7 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
             {/* Critical Paths List & Graph preview */}
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
                   <ShieldAlert className="w-4 h-4 text-rose-400" />
                   <span>破坏性关键传播链路 (Critical Impact Paths)</span>
                 </h3>
@@ -571,7 +571,7 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <FileCode className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">
+                  <span className="text-xs font-bold text-slate-100 uppercase tracking-wider">
                     自动生成的平滑迁移视图模板 (Auto-Generated Mitigation DDL)
                   </span>
                 </div>
@@ -600,13 +600,13 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-4 space-y-4 text-xs">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <h3 className="font-bold text-white text-sm">申请变更影响阶段性豁免 (Exemption)</h3>
-              <button onClick={() => setActiveAckItem(null)} className="text-slate-400 hover:text-white">✕</button>
+              <h3 className="font-bold text-slate-100 text-sm">申请变更影响阶段性豁免 (Exemption)</h3>
+              <button onClick={() => setActiveAckItem(null)} className="text-slate-400 hover:text-slate-100">✕</button>
             </div>
 
             <div className="space-y-1">
               <div className="text-slate-400">受影响对象:</div>
-              <div className="font-semibold text-white font-mono bg-slate-950 p-2 rounded border border-slate-800">
+              <div className="font-semibold text-slate-100 font-mono bg-slate-950 p-2 rounded border border-slate-800">
                 {activeAckItem.objectName}
               </div>
             </div>
@@ -618,7 +618,7 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
                 value={exemptionReason}
                 onChange={(e) => setExemptionReason(e.target.value)}
                 placeholder="例如：下游报表已安排在 10月15日 重构发布，此期间数据可暂容忍历史空值..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
               />
             </div>
 

@@ -322,7 +322,7 @@ export const M13DataModelHub: React.FC = () => {
               <Database className="w-4 h-4 text-violet-400" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-white">M13 数据模型前置管理</h1>
+              <h1 className="text-sm font-bold text-slate-100">M13 数据模型前置管理</h1>
               <p className="text-[10px] text-slate-400">
                 导入 ERMaster / PowerDesigner 设计模型 → 版本管理与对比 → 与实际 ODS 库对比 → 评估下游影响
               </p>
@@ -368,7 +368,7 @@ export const M13DataModelHub: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Import form */}
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-4">
-              <h2 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <h2 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
                 <FileUp className="w-4 h-4 text-indigo-400" />
                 <span>导入设计模型</span>
               </h2>
@@ -453,7 +453,7 @@ export const M13DataModelHub: React.FC = () => {
 
             {/* Model list */}
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
-              <h2 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <h2 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
                 <FileText className="w-4 h-4 text-cyan-400" />
                 <span>已导入模型 ({models.length})</span>
               </h2>
@@ -486,7 +486,7 @@ export const M13DataModelHub: React.FC = () => {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-white">{m.name}</span>
+                          <span className="text-xs font-semibold text-slate-100">{m.name}</span>
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
                             {m.version}
                           </span>
@@ -556,7 +556,7 @@ export const M13DataModelHub: React.FC = () => {
                 data-testid="m13-version-panel"
               >
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <h2 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <h2 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
                     <History className="w-4 h-4 text-emerald-400" />
                     <span>版本管理 — {selectedModel.name}（{versions.length} 个版本）</span>
                   </h2>
@@ -686,7 +686,7 @@ export const M13DataModelHub: React.FC = () => {
                                 versionDiffRows.map((r, i) => (
                                   <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
                                     <td className={`px-3 py-2 font-medium ${r.cls}`}>{r.type}</td>
-                                    <td className="px-3 py-2 font-mono text-white">{r.table}</td>
+                                    <td className="px-3 py-2 font-mono text-slate-100">{r.table}</td>
                                     <td className="px-3 py-2 font-mono text-slate-300">{r.column}</td>
                                     <td className="px-3 py-2 font-mono text-slate-400">{r.from}</td>
                                     <td className="px-3 py-2 font-mono text-slate-400">{r.to}</td>
@@ -722,7 +722,7 @@ export const M13DataModelHub: React.FC = () => {
                 {/* Summary cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-center">
-                    <div className="text-lg font-bold text-white font-mono">{diffReport.totalDifferences}</div>
+                    <div className="text-lg font-bold text-slate-100 font-mono">{diffReport.totalDifferences}</div>
                     <div className="text-[10px] text-slate-400">差异总数</div>
                   </div>
                   <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-center">
@@ -749,7 +749,7 @@ export const M13DataModelHub: React.FC = () => {
                 <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
                   <div className="px-4 py-3 border-b border-slate-800 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-bold text-white flex items-center gap-2">
+                      <h3 className="text-xs font-bold text-slate-100 flex items-center gap-2">
                         <GitCompare className="w-4 h-4 text-violet-400" />
                         <span>差异明细 — {diffReport.modelName} vs {diffReport.dataSourceName} ({diffReport.targetLayer})</span>
                       </h3>
@@ -849,7 +849,7 @@ export const M13DataModelHub: React.FC = () => {
                             const badge = diffTypeBadge(d.diffType);
                             return (
                               <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
-                                <td className="px-4 py-2 font-mono text-white">{d.tableName}</td>
+                                <td className="px-4 py-2 font-mono text-slate-100">{d.tableName}</td>
                                 <td className="px-4 py-2 font-mono text-slate-300">{d.columnName || '-'}</td>
                                 <td className="px-4 py-2">
                                   <span className={`text-[10px] px-1.5 py-0.5 rounded border ${badge.cls}`}>
@@ -885,7 +885,7 @@ export const M13DataModelHub: React.FC = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {Object.entries(diffReport.layerImpact || {}).map(([layer, count]) => (
                     <div key={layer} className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-center">
-                      <div className="text-2xl font-bold text-white font-mono">{count as number}</div>
+                      <div className="text-2xl font-bold text-slate-100 font-mono">{count as number}</div>
                       <div className="text-[10px] text-slate-400 mt-1">{layer} 层受影响资产</div>
                     </div>
                   ))}
@@ -902,7 +902,7 @@ export const M13DataModelHub: React.FC = () => {
                         <div key={i} className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
                           <div className="flex items-center justify-between flex-wrap gap-2">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-semibold text-white font-mono">{d.tableName}</span>
+                              <span className="text-xs font-semibold text-slate-100 font-mono">{d.tableName}</span>
                               {d.columnName && (
                                 <span className="text-[10px] text-slate-400 font-mono">.{d.columnName}</span>
                               )}
@@ -969,7 +969,7 @@ export const M13DataModelHub: React.FC = () => {
             data-testid="m13-edit-modal"
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-white flex items-center gap-2">
+              <h3 className="text-xs font-bold text-slate-100 flex items-center gap-2">
                 <Pencil className="w-3.5 h-3.5 text-indigo-400" />
                 <span>维护模型 — {editingModel.name}</span>
               </h3>

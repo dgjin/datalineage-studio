@@ -207,11 +207,11 @@ export const GraphLegendPanel: React.FC<GraphLegendPanelProps> = ({
           className={`flex items-center gap-2 px-3.5 py-2 rounded-xl backdrop-blur-md transition-all duration-200 shadow-xl border cursor-pointer ${
             isOpen
               ? 'bg-indigo-600 text-white border-indigo-400/60 shadow-indigo-500/30 ring-2 ring-indigo-500/40'
-              : 'bg-slate-900/90 hover:bg-slate-800/95 text-slate-200 border-slate-700/80 hover:border-indigo-500/50 shadow-black/40 hover:text-white'
+              : 'bg-slate-900/90 hover:bg-slate-800/95 text-slate-200 border-slate-700/80 hover:border-indigo-500/50 shadow-black/40 hover:text-slate-100'
           }`}
           title="点击展示/隐藏血缘图例与要素说明"
         >
-          <BookOpen className={`w-4 h-4 ${isOpen ? 'text-white' : 'text-indigo-400'}`} />
+          <BookOpen className={`w-4 h-4 ${isOpen ? 'text-slate-100' : 'text-indigo-400'}`} />
           <span className="text-xs font-semibold tracking-wide">图例说明</span>
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
             isOpen ? 'bg-indigo-700 text-white' : 'bg-slate-800 text-slate-300'
@@ -255,7 +255,7 @@ export const GraphLegendPanel: React.FC<GraphLegendPanelProps> = ({
                 <BookOpen className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="font-bold text-white text-xs flex items-center gap-1.5">
+                <h3 className="font-bold text-slate-100 text-xs flex items-center gap-1.5">
                   <span>血缘图谱图例与要素规范</span>
                   <span className="text-[10px] font-normal text-indigo-300 font-mono px-1.5 py-0.2 rounded bg-indigo-950 border border-indigo-800">
                     SPEC v2.4
@@ -269,7 +269,7 @@ export const GraphLegendPanel: React.FC<GraphLegendPanelProps> = ({
 
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              className="text-slate-400 hover:text-slate-100 p-1 rounded-lg hover:bg-slate-800 transition"
               title="关闭图例"
             >
               <X className="w-4 h-4" />
@@ -285,12 +285,12 @@ export const GraphLegendPanel: React.FC<GraphLegendPanelProps> = ({
                 placeholder="搜索要素类型 (如 Table, API, 虚线, 破坏性)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-950/90 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950/90 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs"
+                  className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-100 text-xs"
                 >
                   ✕
                 </button>
@@ -358,7 +358,7 @@ export const GraphLegendPanel: React.FC<GraphLegendPanelProps> = ({
                             </div>
                             <div>
                               <div className="flex items-center gap-1.5">
-                                <span className="font-bold text-white text-xs">{item.name}</span>
+                                <span className="font-bold text-slate-100 text-xs">{item.name}</span>
                                 <span className={`text-[9px] font-mono px-1 rounded border ${item.tagColor}`}>
                                   {item.type}
                                 </span>
@@ -448,7 +448,7 @@ export const GraphLegendPanel: React.FC<GraphLegendPanelProps> = ({
                               </svg>
                             )}
                           </div>
-                          <span className="font-semibold text-white text-xs">{edge.name}</span>
+                          <span className="font-semibold text-slate-100 text-xs">{edge.name}</span>
                         </div>
 
                         <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${edge.badgeColor}`}>
@@ -491,7 +491,7 @@ export const GraphLegendPanel: React.FC<GraphLegendPanelProps> = ({
                         <span className={`px-2 py-0.5 rounded font-mono font-bold text-xs border ${l.bg}`}>
                           {l.code}
                         </span>
-                        <span className="font-semibold text-white text-xs">{l.name}</span>
+                        <span className="font-semibold text-slate-100 text-xs">{l.name}</span>
                       </div>
                       <p className="text-slate-400 text-[11px] leading-relaxed">
                         {l.desc}
@@ -544,7 +544,7 @@ export const GraphLegendPanel: React.FC<GraphLegendPanelProps> = ({
             </span>
             <button
               onClick={onClose}
-              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white font-medium transition"
+              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-100 font-medium transition"
             >
               完成查看
             </button>

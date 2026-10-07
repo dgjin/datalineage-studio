@@ -198,7 +198,7 @@ export const LayerImportPanel: React.FC = () => {
       {/* Layer x DataSource matrix */}
       <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-white text-sm flex items-center gap-2">
+          <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2">
             <Server className="w-4 h-4 text-indigo-400" />
             <span>分层 × 数据源分布矩阵</span>
           </h3>
@@ -265,7 +265,7 @@ export const LayerImportPanel: React.FC = () => {
       {/* Relations */}
       <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-white text-sm flex items-center gap-2">
+          <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2">
             <Link2 className="w-4 h-4 text-indigo-400" />
             <span>层间导入关系（跨数据源）</span>
           </h3>
@@ -467,7 +467,7 @@ export const LayerImportPanel: React.FC = () => {
       {result && (
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-white text-sm flex items-center gap-2">
+            <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2">
               {result.action === 'PREVIEW'
                 ? <FlaskConical className="w-4 h-4 text-cyan-400" />
                 : <GitBranch className="w-4 h-4 text-emerald-400" />}
@@ -483,7 +483,7 @@ export const LayerImportPanel: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg">
               <div className="text-slate-400 text-[10px]">计划边数</div>
-              <div className="font-mono font-bold text-white text-base">{result.edgesPlanned}</div>
+              <div className="font-mono font-bold text-slate-100 text-base">{result.edgesPlanned}</div>
             </div>
             {result.action === 'BUILD' && (
               <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg">

@@ -205,7 +205,7 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
       {/* File Tree Left Navigation */}
       <div className="w-72 border-r border-slate-800 flex flex-col shrink-0 bg-slate-900/40">
         <div className="p-4 border-b border-slate-800 space-y-1">
-          <div className="text-xs font-bold text-white flex items-center gap-2">
+          <div className="text-xs font-bold text-slate-100 flex items-center gap-2">
             <FolderTree className="w-4 h-4 text-indigo-400" />
             <span>Git 契约仓库目录 (Contracts Repo)</span>
           </div>
@@ -261,7 +261,7 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
         <div className="p-4 border-b border-slate-800 bg-slate-900/60 flex items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-sm font-bold text-white">{selectedContract?.path ?? 'contracts/-'}</span>
+              <span className="font-mono text-sm font-bold text-slate-100">{selectedContract?.path ?? 'contracts/-'}</span>
               {selectedContract && (
                 <span className={`text-xs px-2 py-0.5 rounded border ${STATUS_BADGE[selectedContract.status].cls}`}>
                   {STATUS_BADGE[selectedContract.status].label}
@@ -383,14 +383,14 @@ COMMENT ON COLUMN ods_crm_customer.phone_hash IS '手机号加盐哈希值';`;
 
           {activeView === 'CI_CHECKS' && (
             <div className="space-y-3 max-w-2xl">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+              <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider">
                 CI 检查项面板 · {selectedContract?.path ?? '契约'}（YAML 结构经后端 /contracts/validate 实时校验）
               </h3>
               <div className="space-y-2 text-xs">
                 {ciChecks.map((chk, i) => (
                   <div key={i} className="p-3 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between">
                     <div>
-                      <span className="font-semibold text-white block">{chk.name}</span>
+                      <span className="font-semibold text-slate-100 block">{chk.name}</span>
                       <span className="text-[11px] text-slate-400 mt-0.5 block">{chk.detail}</span>
                     </div>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${

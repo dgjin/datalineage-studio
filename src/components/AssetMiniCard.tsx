@@ -43,7 +43,7 @@ export const AssetMiniCard: React.FC<AssetMiniCardProps> = ({
             <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold">
               {asset.layer}
             </span>
-            <span className="font-semibold text-white truncate max-w-[170px]">{asset.name}</span>
+            <span className="font-semibold text-slate-100 truncate max-w-[170px]">{asset.name}</span>
           </div>
           <p className="text-[11px] text-slate-400 mt-0.5">{asset.displayTitle}</p>
         </div>

@@ -50,7 +50,7 @@ export const Workbench: React.FC<WorkbenchProps> = ({
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
             <span>通用数据血缘与变更治理平台 (Universal Data Mesh Lineage)</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-100 tracking-tight">
             以血缘图谱为核心、以变更事件为驱动、以契约与校验为底线
           </h1>
           <p className="text-xs text-slate-300 leading-relaxed">
@@ -91,7 +91,7 @@ export const Workbench: React.FC<WorkbenchProps> = ({
         {/* Pending Ack Tasks */}
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <span className="font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
               <Clock className="w-4 h-4 text-amber-400" />
               <span>待我确认的变更 (Pending Ack)</span>
             </span>
@@ -108,7 +108,7 @@ export const Workbench: React.FC<WorkbenchProps> = ({
                 className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer hover:border-indigo-500/40 transition space-y-1"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-semibold text-white">{c.assetName}</span>
+                  <span className="font-mono font-semibold text-slate-100">{c.assetName}</span>
                   <span className="text-[10px] text-amber-400 font-bold">{c.changeType}</span>
                 </div>
                 <p className="text-[11px] text-slate-400 line-clamp-1">{c.impactSummary}</p>
@@ -127,7 +127,7 @@ export const Workbench: React.FC<WorkbenchProps> = ({
         {/* Dark-Change Remediation alerts */}
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <span className="font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
               <Flame className="w-4 h-4 text-rose-400" />
               <span>未纳管暗改巡检 (Unmanaged)</span>
             </span>
@@ -163,7 +163,7 @@ export const Workbench: React.FC<WorkbenchProps> = ({
         {/* Quality Issues Digest */}
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <span className="font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-cyan-400" />
               <span>数据质量问题闭环</span>
             </span>
@@ -180,7 +180,7 @@ export const Workbench: React.FC<WorkbenchProps> = ({
                 className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer hover:border-cyan-500/40 transition space-y-1"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-semibold text-white">{iss.code}</span>
+                  <span className="font-mono font-semibold text-slate-100">{iss.code}</span>
                   <span className="text-[10px] text-slate-400">截止: {iss.dueDate}</span>
                 </div>
                 <p className="text-[11px] text-slate-300 line-clamp-1">{iss.title}</p>
@@ -200,7 +200,7 @@ export const Workbench: React.FC<WorkbenchProps> = ({
       {/* Featured Core Assets Table */}
       <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3 text-xs">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <h3 className="font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
             <Database className="w-4 h-4 text-indigo-400" />
             <span>重点监控与核心数据资产 (Top Monitored Entities)</span>
           </h3>
@@ -229,7 +229,7 @@ export const Workbench: React.FC<WorkbenchProps> = ({
                 </span>
               </div>
               <div>
-                <div className="font-mono font-bold text-white text-sm">{asset.name}</div>
+                <div className="font-mono font-bold text-slate-100 text-sm">{asset.name}</div>
                 <div className="text-[11px] text-slate-400 truncate">{asset.displayTitle}</div>
               </div>
               <div className="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-slate-800/80">

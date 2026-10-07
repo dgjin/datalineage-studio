@@ -136,7 +136,7 @@ ${selectedChange?.details?.rawDiff ?? '（该变更未携带原始 DDL 差异记
         {/* Header */}
         <div className="p-4 border-b border-slate-800 bg-slate-900/60 space-y-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-base font-bold text-white flex items-center gap-2">
+            <h1 className="text-base font-bold text-slate-100 flex items-center gap-2">
               <Activity className="w-5 h-5 text-indigo-400" />
               <span>M4 变更事件中心</span>
             </h1>
@@ -282,7 +282,7 @@ ${selectedChange?.details?.rawDiff ?? '（该变更未携带原始 DDL 差异记
                 <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
                   ID: {selectedChange.id}
                 </span>
-                <span className="text-base font-bold text-white font-mono">{selectedChange.assetName}</span>
+                <span className="text-base font-bold text-slate-100 font-mono">{selectedChange.assetName}</span>
                 <span className="text-xs font-semibold text-amber-400">({selectedChange.changeType})</span>
               </div>
               <div className="text-xs text-slate-400 mt-1 flex items-center gap-3">
@@ -395,7 +395,7 @@ ${selectedChange?.details?.rawDiff ?? '（该变更未携带原始 DDL 差异记
           {/* Diff Viewer Card */}
           <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
                 <FileCode className="w-4 h-4 text-indigo-400" />
                 <span>结构变更差异比对 (Diff Viewer)</span>
               </h3>
@@ -420,25 +420,25 @@ ${selectedChange?.details?.rawDiff ?? '（该变更未携带原始 DDL 差异记
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
             <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl">
               <span className="text-slate-400 block text-[11px]">受影响指标</span>
-              <span className="text-xl font-bold font-mono text-white mt-1 block">
+              <span className="text-xl font-bold font-mono text-slate-100 mt-1 block">
                 {selectedChange.affectedCount.metrics}
               </span>
             </div>
             <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl">
               <span className="text-slate-400 block text-[11px]">受影响报表/看板</span>
-              <span className="text-xl font-bold font-mono text-white mt-1 block">
+              <span className="text-xl font-bold font-mono text-slate-100 mt-1 block">
                 {selectedChange.affectedCount.reports}
               </span>
             </div>
             <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl">
               <span className="text-slate-400 block text-[11px]">受影响下游表</span>
-              <span className="text-xl font-bold font-mono text-white mt-1 block">
+              <span className="text-xl font-bold font-mono text-slate-100 mt-1 block">
                 {selectedChange.affectedCount.tables}
               </span>
             </div>
             <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl">
               <span className="text-slate-400 block text-[11px]">受影响对外接口</span>
-              <span className="text-xl font-bold font-mono text-white mt-1 block">
+              <span className="text-xl font-bold font-mono text-slate-100 mt-1 block">
                 {selectedChange.affectedCount.apis}
               </span>
             </div>
@@ -452,10 +452,10 @@ ${selectedChange?.details?.rawDiff ?? '（该变更未携带原始 DDL 差异记
           <div className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-5 space-y-4 text-xs">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
-                <h3 className="font-bold text-white text-sm">反向生成 Git 契约补丁 (Reverse Contract Patch)</h3>
+                <h3 className="font-bold text-slate-100 text-sm">反向生成 Git 契约补丁 (Reverse Contract Patch)</h3>
                 <p className="text-slate-400 text-[11px] mt-0.5">将生产已发生的暗改结构自动格式化为契约 YAML，纠正断链</p>
               </div>
-              <button onClick={() => setContractPatchModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+              <button onClick={() => setContractPatchModalOpen(false)} className="text-slate-400 hover:text-slate-100">✕</button>
             </div>
 
             <div className="space-y-1">
@@ -511,10 +511,10 @@ ${selectedChange?.details?.rawDiff ?? '（该变更未携带原始 DDL 差异记
           <div className="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-5 space-y-4 text-xs">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
-                <h3 className="font-bold text-white text-sm">发布握手单 (Release Note for Data)</h3>
+                <h3 className="font-bold text-slate-100 text-sm">发布握手单 (Release Note for Data)</h3>
                 <p className="text-slate-400 text-[11px] mt-0.5">衔接手绘方案“批准后发布”，交付 DBA 或自动化部署流水线</p>
               </div>
-              <button onClick={() => setReleaseNoteModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+              <button onClick={() => setReleaseNoteModalOpen(false)} className="text-slate-400 hover:text-slate-100">✕</button>
             </div>
 
             <pre className="p-3 bg-slate-950 rounded-lg text-slate-200 font-mono text-xs overflow-x-auto border border-slate-800 max-h-72 leading-relaxed">

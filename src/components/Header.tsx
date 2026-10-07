@@ -15,10 +15,12 @@ import {
   ChevronDown,
   LogOut,
   FlaskConical,
-  Palette
+  Palette,
+  Sun,
+  Moon
 } from 'lucide-react';
-import { THEMES, getTheme, applyTheme } from '../utils/theme';
-import type { ThemeId } from '../utils/theme';
+import { THEMES, getTheme, applyTheme, getMode, applyMode } from '../utils/theme';
+import type { ThemeId, ModeId } from '../utils/theme';
 import { UserRole, NotificationItem } from '../types/lineage';
 import { ROLE_LABELS } from './AuthGuard';
 import type { AuthUser } from '../services/api';
@@ -64,6 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [authMenuOpen, setAuthMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [theme, setThemeState] = useState<ThemeId>(() => getTheme());
+  const [mode, setModeState] = useState<ModeId>(() => getMode());
   const themeMenuRef = useRef<HTMLDivElement>(null);
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -82,6 +85,11 @@ export const Header: React.FC<HeaderProps> = ({
   const handleThemeChange = (id: ThemeId) => {
     applyTheme(id);
     setThemeState(id);
+  };
+
+  const handleModeChange = (id: ModeId) => {
+    applyMode(id);
+    setModeState(id);
   };
 
   const roleLabels: Record<UserRole, { title: string; color: string }> = {
@@ -108,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-sm tracking-tight text-white">DataLineage</span>
+              <span className="font-bold text-sm tracking-tight text-slate-100">DataLineage</span>
               <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Studio</span>
             </div>
             <p className="text-[10px] text-slate-400 hidden sm:block">通用数据血缘与变更治理平台</p>
@@ -123,12 +131,12 @@ export const Header: React.FC<HeaderProps> = ({
           <select 
             value={currentSpace} 
             onChange={(e) => onSpaceChange(e.target.value)}
-            className="bg-transparent text-white font-medium focus:outline-none cursor-pointer"
+            className="bg-transparent text-slate-100 font-medium focus:outline-none cursor-pointer"
           >
-            <option value="all" className="bg-slate-900 text-white">全域视角 (All Spaces)</option>
-            <option value="crm" className="bg-slate-900 text-white">CRM 客户域 (crm)</option>
-            <option value="trade" className="bg-slate-900 text-white">交易结算域 (trade)</option>
-            <option value="risk" className="bg-slate-900 text-white">合规风控域 (risk)</option>
+            <option value="all" className="bg-slate-900 text-slate-100">全域视角 (All Spaces)</option>
+            <option value="crm" className="bg-slate-900 text-slate-100">CRM 客户域 (crm)</option>
+            <option value="trade" className="bg-slate-900 text-slate-100">交易结算域 (trade)</option>
+            <option value="risk" className="bg-slate-900 text-slate-100">合规风控域 (risk)</option>
           </select>
         </div>
       </div>
@@ -210,8 +218,8 @@ export const Header: React.FC<HeaderProps> = ({
             className={`p-1.5 rounded-md transition ${
               themeMenuOpen ? 'bg-slate-800 text-slate-200' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'
             }`}
-            title="界面主题 (Theme Presets)"
-            aria-label="切换界面主题"
+            title="外观与主题 (Appearance & Theme)"
+            aria-label="切换外观与主题"
           >
             <Palette className="w-4 h-4" />
           </button>
@@ -219,7 +227,35 @@ export const Header: React.FC<HeaderProps> = ({
           {themeMenuOpen && (
             <div className="absolute right-0 mt-1.5 w-56 rounded-lg bg-slate-900 border border-slate-800 shadow-xl py-1 z-50">
               <div className="px-2.5 py-1 text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
-                界面主题 · 实时预览
+                外观模式
+              </div>
+              <div className="px-2.5 pb-2 flex items-center gap-1.5">
+                <button
+                  onClick={() => handleModeChange('dark')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md border text-xs transition ${
+                    mode === 'dark'
+                      ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/40 font-medium'
+                      : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 border-slate-700'
+                  }`}
+                >
+                  <Moon className="w-3.5 h-3.5" />
+                  深色
+                </button>
+                <button
+                  onClick={() => handleModeChange('light')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md border text-xs transition ${
+                    mode === 'light'
+                      ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/40 font-medium'
+                      : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 border-slate-700'
+                  }`}
+                >
+                  <Sun className="w-3.5 h-3.5" />
+                  浅色
+                </button>
+              </div>
+              <div className="mx-2.5 h-px bg-slate-800 mb-1" />
+              <div className="px-2.5 py-1 text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
+                强调色 · 实时预览
               </div>
               {THEMES.map((t) => (
                 <button

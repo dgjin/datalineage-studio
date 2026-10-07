@@ -112,7 +112,7 @@ export const M7ValidationCenter: React.FC<M7ValidationCenterProps> = ({
       <div className="w-80 sm:w-96 border-r border-slate-800 flex flex-col shrink-0">
         <div className="p-4 border-b border-slate-800 bg-slate-900/60 space-y-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-base font-bold text-white flex items-center gap-2">
+            <h1 className="text-base font-bold text-slate-100 flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-amber-400" />
               <span>M7 校验中心与规则引擎</span>
             </h1>
@@ -209,7 +209,7 @@ export const M7ValidationCenter: React.FC<M7ValidationCenterProps> = ({
                 <span className="font-mono font-bold text-sm text-amber-400 px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30">
                   {selectedRule.code}
                 </span>
-                <h2 className="text-base font-bold text-white">{selectedRule.name}</h2>
+                <h2 className="text-base font-bold text-slate-100">{selectedRule.name}</h2>
                 <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">
                   {selectedRule.category}
                 </span>
@@ -245,7 +245,7 @@ export const M7ValidationCenter: React.FC<M7ValidationCenterProps> = ({
           {/* DSL Code Display */}
           <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
                 <FileCode className="w-4 h-4 text-amber-400" />
                 <span>声明式校验 DSL 规则定义</span>
               </span>
@@ -273,7 +273,7 @@ export const M7ValidationCenter: React.FC<M7ValidationCenterProps> = ({
 
           {/* Fix Hint & Guidance */}
           <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-2">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+            <h4 className="text-xs font-bold text-slate-100 uppercase tracking-wider">
               修复指引与治理建议 (Fix Hint)
             </h4>
             <p className="text-xs text-slate-300 bg-slate-950 p-3 rounded-lg border border-slate-800 leading-relaxed">
@@ -292,7 +292,7 @@ export const M7ValidationCenter: React.FC<M7ValidationCenterProps> = ({
           {dryRunResult && (
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <h4 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-cyan-400" />
                   <span>试运行检测报告 (Dry-Run Preview)</span>
                 </h4>
@@ -344,7 +344,7 @@ export const M7ValidationCenter: React.FC<M7ValidationCenterProps> = ({
       {activeTab === 'ISSUES' && (
         <div className="flex-1 flex flex-col p-6 space-y-4 overflow-y-auto">
           <div className="border-b border-slate-800 pb-3">
-            <h2 className="text-base font-bold text-white">质量问题闭环台账 (Quality Issues Ledger)</h2>
+            <h2 className="text-base font-bold text-slate-100">质量问题闭环台账 (Quality Issues Ledger)</h2>
             <p className="text-xs text-slate-400 mt-0.5">承接核对报告 35 项问题，已全部完成资产 ID 强绑定，杜绝断链</p>
           </div>
 
@@ -354,7 +354,7 @@ export const M7ValidationCenter: React.FC<M7ValidationCenterProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-bold text-rose-400">{iss.code}</span>
-                    <span className="font-semibold text-white text-sm">{iss.title}</span>
+                    <span className="font-semibold text-slate-100 text-sm">{iss.title}</span>
                   </div>
                   <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono">
                     {iss.status}

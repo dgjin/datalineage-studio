@@ -45,7 +45,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             <AlertTriangle className="w-6 h-6 text-rose-400" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white">
+            <h3 className="text-sm font-bold text-slate-100">
               模块渲染异常{label ? ` · ${label}` : ''}
             </h3>
             <p className="text-xs text-slate-400 mt-1.5">

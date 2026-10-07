@@ -360,7 +360,7 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
             <span>帮助中心 · 操作闭环与配置指南</span>
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-100 tracking-tight">
               一张图看懂操作闭环，分步说明直达每个模块
             </h1>
             <p className="text-xs text-slate-300 leading-relaxed mt-1.5 max-w-3xl">
@@ -406,7 +406,7 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
       {/* ================= Flow Overview ================= */}
       <section className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+          <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
             <Workflow className="w-4 h-4 text-indigo-400" />
             <span>{role === 'USER' ? '用户操作闭环总览' : '管理员配置管理闭环总览'}</span>
           </h2>
@@ -439,7 +439,7 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <span className="text-[10px] font-mono text-slate-500">STEP {step.seq}</span>
-                              <span className="text-xs font-bold text-white truncate">{step.title}</span>
+                              <span className="text-xs font-bold text-slate-100 truncate">{step.title}</span>
                             </div>
                             <div className="text-[10px] text-slate-400 truncate mt-0.5">{step.subtitle}</div>
                           </div>
@@ -476,7 +476,7 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
 
       {/* ================= Step-by-Step Details ================= */}
       <section className="space-y-3">
-        <h2 className="text-sm font-bold text-white flex items-center gap-2">
+        <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
           <ChevronRight className="w-4 h-4 text-indigo-400" />
           <span>分步详细说明</span>
         </h2>
@@ -508,7 +508,7 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
                   <div className="flex-1 min-w-0 space-y-2.5">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-sm font-bold text-white">{step.title}</h3>
+                        <h3 className="text-sm font-bold text-slate-100">{step.title}</h3>
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">
                           {step.module}
                         </span>
@@ -556,7 +556,7 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Keyboard shortcuts */}
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
-          <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
             <Keyboard className="w-4 h-4 text-indigo-400" />
             <span>快捷键速查</span>
           </h3>
@@ -586,7 +586,7 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
 
         {/* Admin ops cheat-sheet */}
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
-          <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
             <Terminal className="w-4 h-4 text-emerald-400" />
             <span>运维小抄（管理员）</span>
           </h3>
@@ -606,7 +606,7 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
 
         {/* FAQ */}
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
-          <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
             <HelpCircle className="w-4 h-4 text-cyan-400" />
             <span>常见问题</span>
           </h3>

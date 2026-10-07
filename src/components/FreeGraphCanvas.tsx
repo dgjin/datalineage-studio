@@ -238,7 +238,7 @@ export const FreeGraphCanvas: React.FC<FreeGraphCanvasProps> = ({
 
           {/* Background dot pattern */}
           <pattern id="dot-pattern" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
-            <circle cx="2" cy="2" r="1" fill="#334155" opacity="0.3" />
+            <circle cx="2" cy="2" r="1" style={{ fill: 'var(--color-slate-700)' }} opacity="0.3" />
           </pattern>
         </defs>
 
@@ -253,7 +253,7 @@ export const FreeGraphCanvas: React.FC<FreeGraphCanvasProps> = ({
               y1={layoutData.centerY} 
               x2={layoutData.centerX + 750} 
               y2={layoutData.centerY} 
-              stroke="#334155" 
+              style={{ stroke: 'var(--color-slate-700)' }} 
               strokeDasharray="4 6" 
               strokeOpacity={0.4} 
             />
@@ -262,7 +262,7 @@ export const FreeGraphCanvas: React.FC<FreeGraphCanvasProps> = ({
               y1={layoutData.centerY - 700} 
               x2={layoutData.centerX} 
               y2={layoutData.centerY + 700} 
-              stroke="#334155" 
+              style={{ stroke: 'var(--color-slate-700)' }} 
               strokeDasharray="4 6" 
               strokeOpacity={0.4} 
             />
@@ -275,7 +275,7 @@ export const FreeGraphCanvas: React.FC<FreeGraphCanvasProps> = ({
                   cy={layoutData.centerY}
                   r={ring.radius}
                   fill="none"
-                  stroke={idx === 0 ? '#6366f1' : '#334155'}
+                  style={{ stroke: idx === 0 ? 'var(--color-indigo-500)' : 'var(--color-slate-700)' }}
                   strokeWidth={idx === 0 ? 1.5 : 1}
                   strokeDasharray="6 8"
                   strokeOpacity={0.5}
@@ -284,7 +284,7 @@ export const FreeGraphCanvas: React.FC<FreeGraphCanvasProps> = ({
                 <text
                   x={layoutData.centerX + 15}
                   y={layoutData.centerY - ring.radius + 16}
-                  fill="#94a3b8"
+                  style={{ fill: 'var(--color-slate-400)' }}
                   fontSize="11"
                   fontFamily="monospace"
                   opacity={0.7}
@@ -332,7 +332,7 @@ export const FreeGraphCanvas: React.FC<FreeGraphCanvasProps> = ({
           ) : (
             <Network className="w-4 h-4 text-indigo-400" />
           )}
-          <span className="font-semibold text-white">
+          <span className="font-semibold text-slate-100">
             {layoutMode === 'RADIAL' ? '放射同心圆极坐标布局 (Radial Concentric)' : '力导向物理聚类拓扑 (Force-Directed)'}
           </span>
         </div>
@@ -437,7 +437,7 @@ export const FreeGraphCanvas: React.FC<FreeGraphCanvasProps> = ({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`} />
-                  <span className="font-mono font-bold text-xs text-white truncate max-w-[110px]" title={asset.name}>
+                  <span className="font-mono font-bold text-xs text-slate-100 truncate max-w-[110px]" title={asset.name}>
                     {asset.name}
                   </span>
                   <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700 shrink-0">

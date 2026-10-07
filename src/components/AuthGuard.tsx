@@ -165,7 +165,7 @@ const LoginScreen: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-lg tracking-tight text-white">DataLineage</span>
+                  <span className="font-bold text-lg tracking-tight text-slate-100">DataLineage</span>
                   <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Studio</span>
                 </div>
                 <p className="text-xs text-slate-400">通用数据血缘与变更治理平台</p>
@@ -196,7 +196,7 @@ const LoginScreen: React.FC = () => {
 
         {/* Login form panel */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900/70 backdrop-blur p-7 shadow-2xl">
-          <h1 className="text-lg font-bold text-white mb-1">登录控制台</h1>
+          <h1 className="text-lg font-bold text-slate-100 mb-1">登录控制台</h1>
           <p className="text-xs text-slate-400 mb-5">使用平台账号登录，或选择下方演示账号一键体验。</p>
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
@@ -207,7 +207,7 @@ const LoginScreen: React.FC = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="username"
                 disabled={loading}
-                className="w-full h-9 px-3 rounded-lg bg-slate-950 border border-slate-800 focus:border-indigo-500/60 focus:outline-none text-sm text-white placeholder-slate-600 transition disabled:opacity-50"
+                className="w-full h-9 px-3 rounded-lg bg-slate-950 border border-slate-800 focus:border-indigo-500/60 focus:outline-none text-sm text-slate-100 placeholder-slate-600 transition disabled:opacity-50"
                 placeholder="admin / governor / viewer"
               />
             </div>
@@ -219,7 +219,7 @@ const LoginScreen: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 disabled={loading}
-                className="w-full h-9 px-3 rounded-lg bg-slate-950 border border-slate-800 focus:border-indigo-500/60 focus:outline-none text-sm text-white placeholder-slate-600 transition disabled:opacity-50"
+                className="w-full h-9 px-3 rounded-lg bg-slate-950 border border-slate-800 focus:border-indigo-500/60 focus:outline-none text-sm text-slate-100 placeholder-slate-600 transition disabled:opacity-50"
                 placeholder="••••••••"
               />
             </div>

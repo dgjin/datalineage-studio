@@ -117,7 +117,7 @@ export const LineageExportModal: React.FC<LineageExportModalProps> = ({
               </div>
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-bold text-slate-100 flex items-center gap-2">
                 <span>导出数据血缘可视化图谱</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                   高清文档交付级
@@ -131,7 +131,7 @@ export const LineageExportModal: React.FC<LineageExportModalProps> = ({
 
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+            className="text-slate-400 hover:text-slate-100 p-1 rounded-lg hover:bg-slate-800 transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -261,7 +261,7 @@ export const LineageExportModal: React.FC<LineageExportModalProps> = ({
         <div className="p-4 border-t border-slate-800 bg-slate-900/90 flex items-center justify-between text-xs">
           <div className="text-slate-400 flex items-center gap-2">
             <span>导出规格:</span>
-            <span className="font-mono text-white font-medium">
+            <span className="font-mono text-slate-100 font-medium">
               {format === 'PNG' ? 'PNG @ 2x (~3000x1600px 高分辨率)' : format === 'SVG' ? 'SVG Vector (独立矢量 XML 无依赖)' : 'Markdown .mmd'}
             </span>
           </div>

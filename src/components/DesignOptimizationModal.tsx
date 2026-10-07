@@ -112,7 +112,7 @@ export const DesignOptimizationModal: React.FC<DesignOptimizationModalProps> = (
               </div>
             </div>
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
                 <span>针对《数据血缘管理应用详细设计》的系统级深度优化建议</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                   架构师高阶演进方案
@@ -126,7 +126,7 @@ export const DesignOptimizationModal: React.FC<DesignOptimizationModalProps> = (
 
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+            className="text-slate-400 hover:text-slate-100 p-1 rounded-lg hover:bg-slate-800 transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -144,7 +144,7 @@ export const DesignOptimizationModal: React.FC<DesignOptimizationModalProps> = (
               <div className="space-y-3">
                 {sec.items.map((item, iIdx) => (
                   <div key={iIdx} className="p-3 bg-slate-900/90 rounded-lg border border-slate-800 space-y-2">
-                    <h4 className="font-semibold text-white text-xs flex items-center gap-1.5">
+                    <h4 className="font-semibold text-slate-100 text-xs flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
                       <span>{item.point}</span>
                     </h4>

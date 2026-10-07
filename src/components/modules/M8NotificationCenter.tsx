@@ -139,7 +139,7 @@ export const M8NotificationCenter: React.FC<M8NotificationCenterProps> = ({
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
         <div>
-          <h1 className="text-lg font-bold text-white flex items-center gap-2">
+          <h1 className="text-lg font-bold text-slate-100 flex items-center gap-2">
             <Inbox className="w-5 h-5 text-indigo-400" />
             <span>M8 协同通知与闭环中心 (Actionable Inbox)</span>
           </h1>
@@ -169,7 +169,7 @@ export const M8NotificationCenter: React.FC<M8NotificationCenterProps> = ({
       {/* Noise Reduction Configuration Card */}
       <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3 text-xs">
         <div className="flex items-center justify-between">
-          <span className="font-semibold text-white flex items-center gap-2">
+          <span className="font-semibold text-slate-100 flex items-center gap-2">
             <Sliders className="w-4 h-4 text-indigo-400" />
             <span>智能降噪与防疲劳偏好 (Anti-Noise Rules)</span>
           </span>
@@ -233,7 +233,7 @@ export const M8NotificationCenter: React.FC<M8NotificationCenterProps> = ({
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${n.read ? 'bg-slate-600' : 'bg-rose-500'}`} />
-                  <h3 className="font-bold text-white text-sm">{n.title}</h3>
+                  <h3 className="font-bold text-slate-100 text-sm">{n.title}</h3>
                 </div>
                 <span className="font-mono text-[10px] text-slate-400">{n.timestamp}</span>
               </div>
@@ -273,7 +273,7 @@ export const M8NotificationCenter: React.FC<M8NotificationCenterProps> = ({
           <div className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-5 space-y-4 text-xs max-h-[85vh] flex flex-col">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
-                <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2">
                   <Webhook className="w-4 h-4 text-cyan-400" />
                   <span>Webhook 订阅配置（CI/CD 变更通知）</span>
                 </h3>
@@ -281,7 +281,7 @@ export const M8NotificationCenter: React.FC<M8NotificationCenterProps> = ({
                   变更创建 / 审批决策 / 标准违规事件将携带 HMAC-SHA256 签名实时推送至外部流水线
                 </p>
               </div>
-              <button onClick={() => setWebhookModalOpen(false)} className="text-slate-400 hover:text-white p-1">
+              <button onClick={() => setWebhookModalOpen(false)} className="text-slate-400 hover:text-slate-100 p-1">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -304,7 +304,7 @@ export const M8NotificationCenter: React.FC<M8NotificationCenterProps> = ({
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${w.enabled ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-                        <span className="font-semibold text-white truncate">{w.name}</span>
+                        <span className="font-semibold text-slate-100 truncate">{w.name}</span>
                         <span className="font-mono text-[10px] text-slate-400 truncate max-w-[220px]">{w.url}</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -352,12 +352,12 @@ export const M8NotificationCenter: React.FC<M8NotificationCenterProps> = ({
             {/* Create / edit form */}
             <div className="border-t border-slate-800 pt-3 space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-white flex items-center gap-1.5">
+                <span className="font-semibold text-slate-100 flex items-center gap-1.5">
                   <Plus className="w-3.5 h-3.5 text-cyan-400" />
                   <span>{editingId ? '编辑订阅' : '新建订阅'}</span>
                 </span>
                 {editingId && (
-                  <button onClick={resetWebhookForm} className="text-[11px] text-slate-400 hover:text-white">
+                  <button onClick={resetWebhookForm} className="text-[11px] text-slate-400 hover:text-slate-100">
                     取消编辑，切换新建
                   </button>
                 )}

@@ -443,7 +443,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
             <select
               value={depth}
               onChange={(e) => setDepth(Number(e.target.value))}
-              className="bg-transparent text-white font-mono focus:outline-none cursor-pointer"
+              className="bg-transparent text-slate-100 font-mono focus:outline-none cursor-pointer"
             >
               <option value={1} className="bg-slate-900">1 跳</option>
               <option value={2} className="bg-slate-900">2 跳</option>
@@ -482,7 +482,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
               {layoutMode === 'FORCE_DIRECTED' && <Network className="w-3.5 h-3.5 text-amber-400" />}
               {layoutMode === 'RADIAL' && <Crosshair className="w-3.5 h-3.5 text-cyan-400" />}
 
-              <span className="hidden min-[1728px]:inline font-semibold text-white whitespace-nowrap">
+              <span className="hidden min-[1728px]:inline font-semibold text-slate-100 whitespace-nowrap">
                 {layoutMode === 'HIERARCHICAL' ? '数仓分层' : layoutMode === 'FORCE_DIRECTED' ? '力导向拓扑' : '放射同心圆'}
               </span>
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${layoutDropdownOpen ? 'rotate-180' : ''}`} />
@@ -507,8 +507,8 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                     }}
                     className={`w-full text-left p-2 rounded-lg flex items-start gap-2.5 transition cursor-pointer ${
                       layoutMode === 'HIERARCHICAL'
-                        ? 'bg-indigo-600/20 text-white border border-indigo-500/40'
-                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+                        ? 'bg-indigo-600/20 text-slate-100 border border-indigo-500/40'
+                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-slate-100'
                     }`}
                   >
                     <div className="p-1.5 rounded-md bg-indigo-500/20 text-indigo-400 shrink-0 mt-0.5">
@@ -516,7 +516,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-white">数仓分层泳道 (Hierarchical)</span>
+                        <span className="font-semibold text-slate-100">数仓分层泳道 (Hierarchical)</span>
                         <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 font-mono">
                           默认5层
                         </span>
@@ -535,8 +535,8 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                     }}
                     className={`w-full text-left p-2 rounded-lg flex items-start gap-2.5 transition cursor-pointer ${
                       layoutMode === 'FORCE_DIRECTED'
-                        ? 'bg-indigo-600/20 text-white border border-indigo-500/40'
-                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+                        ? 'bg-indigo-600/20 text-slate-100 border border-indigo-500/40'
+                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-slate-100'
                     }`}
                   >
                     <div className="p-1.5 rounded-md bg-amber-500/20 text-amber-400 shrink-0 mt-0.5">
@@ -544,7 +544,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-white">力导向有机拓扑 (Force-Directed)</span>
+                        <span className="font-semibold text-slate-100">力导向有机拓扑 (Force-Directed)</span>
                         <span className="text-[9px] px-1 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-800 font-mono">
                           物理模拟
                         </span>
@@ -564,8 +564,8 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                     }}
                     className={`w-full text-left p-2 rounded-lg flex items-start gap-2.5 transition cursor-pointer ${
                       layoutMode === 'RADIAL'
-                        ? 'bg-indigo-600/20 text-white border border-indigo-500/40'
-                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+                        ? 'bg-indigo-600/20 text-slate-100 border border-indigo-500/40'
+                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-slate-100'
                     }`}
                   >
                     <div className="p-1.5 rounded-md bg-cyan-500/20 text-cyan-400 shrink-0 mt-0.5">
@@ -573,7 +573,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-white">放射同心圆布局 (Radial Orbit)</span>
+                        <span className="font-semibold text-slate-100">放射同心圆布局 (Radial Orbit)</span>
                         <span className="text-[9px] px-1 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">
                           焦点辐射
                         </span>
@@ -610,7 +610,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                 }
               }}
               placeholder="搜索资产 / 字段…"
-              className="bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg pl-8 pr-16 py-1 text-xs text-white placeholder-slate-500 w-full min-w-0 transition-colors focus:outline-none"
+              className="bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg pl-8 pr-16 py-1 text-xs text-slate-100 placeholder-slate-500 w-full min-w-0 transition-colors focus:outline-none"
             />
             {/* Clear or count pill */}
             <div className="absolute right-1.5 flex items-center gap-1">
@@ -624,7 +624,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                       setSearchQuery('');
                       setActiveSearchMatchIdx(0);
                     }}
-                    className="text-slate-400 hover:text-white p-0.5"
+                    className="text-slate-400 hover:text-slate-100 p-0.5"
                     title="清空搜索"
                   >
                     ✕
@@ -641,14 +641,14 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
             <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-0.5">
               <button
                 onClick={() => handleNextSearchMatch('PREV')}
-                className="px-1 py-0.5 text-slate-400 hover:text-white rounded"
+                className="px-1 py-0.5 text-slate-400 hover:text-slate-100 rounded"
                 title="上一个匹配项"
               >
                 ▲
               </button>
               <button
                 onClick={() => handleNextSearchMatch('NEXT')}
-                className="px-1 py-0.5 text-slate-400 hover:text-white rounded"
+                className="px-1 py-0.5 text-slate-400 hover:text-slate-100 rounded"
                 title="下一个匹配项"
               >
                 ▼
@@ -701,13 +701,13 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                         }}
                         className={`p-2 rounded-lg flex items-center justify-between gap-2 cursor-pointer transition ${
                           isCurrent
-                            ? 'bg-indigo-600/30 border border-indigo-500/50 text-white'
+                            ? 'bg-indigo-600/30 border border-indigo-500/50 text-slate-100'
                             : 'hover:bg-slate-800/80 text-slate-300'
                         }`}
                       >
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-mono font-bold text-white text-xs truncate max-w-[150px]">
+                            <span className="font-mono font-bold text-slate-100 text-xs truncate max-w-[150px]">
                               {a.name}
                             </span>
                             <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">
@@ -739,7 +739,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
           <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-0.5 text-xs text-slate-300 shrink-0">
             <button
               onClick={() => setZoomLevel(prev => Math.max(0.65, Number((prev - 0.1).toFixed(1))))}
-              className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded transition"
+              className="p-1 hover:bg-slate-800 text-slate-400 hover:text-slate-100 rounded transition"
               title="缩小画布 (Zoom Out)"
             >
               <ZoomOut className="w-3.5 h-3.5" />
@@ -753,7 +753,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
             </button>
             <button
               onClick={() => setZoomLevel(prev => Math.min(1.4, Number((prev + 0.1).toFixed(1))))}
-              className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded transition"
+              className="p-1 hover:bg-slate-800 text-slate-400 hover:text-slate-100 rounded transition"
               title="放大画布 (Zoom In)"
             >
               <ZoomIn className="w-3.5 h-3.5" />
@@ -817,7 +817,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
           {/* Export Graph as High-Quality SVG / PNG / Mermaid */}
           <button
             onClick={() => setIsExportModalOpen(true)}
-            className="flex items-center gap-1.5 px-2 min-[1728px]:px-3 py-1 rounded-lg bg-gradient-to-r from-indigo-600/30 to-indigo-400/30 hover:from-indigo-600/50 hover:to-indigo-400/50 border border-indigo-500/40 text-indigo-200 hover:text-white transition font-medium shadow-sm shrink-0"
+            className="flex items-center gap-1.5 px-2 min-[1728px]:px-3 py-1 rounded-lg bg-gradient-to-r from-indigo-600/30 to-indigo-400/30 hover:from-indigo-600/50 hover:to-indigo-400/50 border border-indigo-500/40 text-indigo-200 hover:text-slate-100 transition font-medium shadow-sm shrink-0"
             title="导出当前血缘图谱为高清 SVG 矢量图、PNG 或 Mermaid 架构代码"
           >
             <Download className="w-3.5 h-3.5 text-cyan-400" />
@@ -837,7 +837,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                 <select
                   value={pathStart}
                   onChange={(e) => setPathStart(e.target.value)}
-                  className="bg-transparent text-white font-mono focus:outline-none cursor-pointer max-w-[200px] truncate"
+                  className="bg-transparent text-slate-100 font-mono focus:outline-none cursor-pointer max-w-[200px] truncate"
                 >
                   {assets.map(a => <option key={a.id} value={a.id} className="bg-slate-900">{a.name} ({a.layer} - {a.displayTitle})</option>)}
                 </select>
@@ -845,7 +845,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
 
               <button
                 onClick={handleSwapStartEnd}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 transition"
                 title="反转起点与终点"
               >
                 <ArrowLeftRight className="w-3.5 h-3.5 text-indigo-400" />
@@ -857,7 +857,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                 <select
                   value={pathEnd}
                   onChange={(e) => setPathEnd(e.target.value)}
-                  className="bg-transparent text-white font-mono focus:outline-none cursor-pointer max-w-[200px] truncate"
+                  className="bg-transparent text-slate-100 font-mono focus:outline-none cursor-pointer max-w-[200px] truncate"
                 >
                   {assets.map(a => <option key={a.id} value={a.id} className="bg-slate-900">{a.name} ({a.layer} - {a.displayTitle})</option>)}
                 </select>
@@ -874,7 +874,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
               {isPathHighlighted && (
                 <button
                   onClick={handleClearPathHighlight}
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1"
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 transition flex items-center gap-1"
                 >
                   <XCircle className="w-3.5 h-3.5" />
                   <span>清除高亮</span>
@@ -897,7 +897,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
 
               <button
                 onClick={() => setPathFinderOpen(false)}
-                className="text-slate-400 hover:text-white p-1"
+                className="text-slate-400 hover:text-slate-100 p-1"
               >
                 ✕
               </button>
@@ -936,7 +936,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                       </span>
                       <button
                         onClick={handleSwapStartEnd}
-                        className="underline font-semibold text-white ml-1 hover:text-amber-300"
+                        className="underline font-semibold text-slate-100 ml-1 hover:text-amber-300"
                       >
                         点击反转起点与终点并高亮 →
                       </button>
@@ -977,7 +977,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
               <div className="bg-slate-900/90 border border-cyan-500/40 rounded-xl p-3 mb-4 shadow-xl shadow-cyan-500/10 flex flex-wrap items-center justify-between gap-3 text-xs animate-fade-in">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping inline-block" />
-                  <span className="font-bold text-white">主数据流路径:</span>
+                  <span className="font-bold text-slate-100">主数据流路径:</span>
                   <span className="font-mono text-cyan-300 font-bold">{activePath.totalHops} 跳 ({activePath.steps.length} 站)</span>
                   <span className="text-slate-400 text-[11px]">｜ 瓶颈最低置信度: <strong className="text-emerald-400 font-mono">{activePath.lowestConfidence}%</strong></span>
                 </div>
@@ -1025,7 +1025,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                     >
                       <div className="flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                        <span className="font-bold font-mono text-sm tracking-wide text-white">{layer} 层</span>
+                        <span className="font-bold font-mono text-sm tracking-wide text-slate-100">{layer} 层</span>
                       </div>
                       <span className="text-[10px] text-slate-400 font-mono">
                         {assetsByLayer[layer].length} 资产
@@ -1111,7 +1111,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`} />
-                                <span className="font-mono font-bold text-xs text-white truncate max-w-[130px]" title={asset.name}>
+                                <span className="font-mono font-bold text-xs text-slate-100 truncate max-w-[130px]" title={asset.name}>
                                   {asset.name}
                                 </span>
                                 <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700 shrink-0">
@@ -1131,9 +1131,9 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                                 {stepOnPath && (
                                   <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold shrink-0 ${
                                     stepOnPath.isStart
-                                      ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                                      ? 'bg-cyan-500 text-[#020617] shadow-sm'
                                       : stepOnPath.isEnd
-                                      ? 'bg-emerald-400 text-slate-950 shadow-sm'
+                                      ? 'bg-emerald-400 text-[#020617] shadow-sm'
                                       : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
                                   }`}>
                                     {stepOnPath.isStart ? '起点 (Hop 1)' : stepOnPath.isEnd ? `终点 (Hop ${stepOnPath.stepIndex})` : `第 ${stepOnPath.stepIndex} 站`}
@@ -1231,9 +1231,9 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
 
             <div className="flex items-center gap-3 text-slate-400">
               {granularity === 'COLUMN' ? (
-                <span>字段映射数: <strong className="text-white font-mono">{visibleEdges.filter(e => e.kind === 'COLUMN').length}</strong></span>
+                <span>字段映射数: <strong className="text-slate-100 font-mono">{visibleEdges.filter(e => e.kind === 'COLUMN').length}</strong></span>
               ) : (
-                <span>当前拓扑边数: <strong className="text-white font-mono">{visibleEdges.length}</strong></span>
+                <span>当前拓扑边数: <strong className="text-slate-100 font-mono">{visibleEdges.length}</strong></span>
               )}
               <span>聚焦资产: <strong className="text-indigo-400 font-mono">{focusId}</strong></span>
             </div>
@@ -1249,12 +1249,12 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
                   {selectedAsset.layer}
                 </span>
-                <h3 className="font-bold text-sm text-white mt-1">{selectedAsset.name}</h3>
+                <h3 className="font-bold text-sm text-slate-100 mt-1">{selectedAsset.name}</h3>
                 <p className="text-slate-400 text-[11px]">{selectedAsset.displayTitle}</p>
               </div>
               <button
                 onClick={() => setSelectedNodeId(null)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-slate-100"
               >
                 ✕
               </button>
@@ -1392,7 +1392,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
             {/* Selection counter & badge */}
             <div className="flex items-center gap-2 pr-3 border-r border-slate-700/80">
               <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse" />
-              <span className="font-bold text-white">
+              <span className="font-bold text-slate-100">
                 已选中 <span className="text-purple-300 font-mono text-sm">{selectedNodeIds.size}</span> 个节点
               </span>
               <span className="text-[10px] text-slate-400 font-mono">
@@ -1445,7 +1445,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
                 setHighlightDependenciesActive(false);
                 setFilterToSubsetOnly(false);
               }}
-              className="px-2 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition text-[11px] cursor-pointer"
+              className="px-2 py-1 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition text-[11px] cursor-pointer"
               title="清空多选状态"
             >
               清空 ✕

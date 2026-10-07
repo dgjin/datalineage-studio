@@ -18,6 +18,13 @@
     var(--color-indigo-400) 55%,
     var(--color-indigo-300) 100%
   );
+  --scrollbar-thumb: rgb(51 65 85 / 0.9);
+  --scrollbar-thumb-hover: rgb(71 85 105 / 0.95);
+}
+
+/* 视口底色跟随外观（overscroll 回弹区域不露白/露黑） */
+html {
+  background-color: var(--color-slate-950);
 }
 
 /* ── 科技青 ── indigo 族 → cyan ── */
@@ -80,6 +87,100 @@
   --color-indigo-950: oklch(27.9% 0.077 45.635);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   浅色模式（data-mode="light"）——与强调色肤色正交，可自由组合。
+   原理：
+   1) slate 色阶亮度反转：背景用深端档（950/900/800…）→ 浅色值，
+      文本用浅端档（100/300/400…）→ 深色值，500 作为中灰锚点不动；
+   2) 语义色与肤色的「浅档」（200/300/400）换成各自 600~800 档
+      的深色值，保证浅底上的彩色文本、徽章与图标依旧可读；
+   3) 实底彩色按钮（500 档起）保持不变，其白字由组件层保留。
+   ═══════════════════════════════════════════════════════════════════ */
+[data-mode="light"] {
+  color-scheme: light;
+
+  /* ── slate 反转 ── */
+  --color-slate-950: oklch(98.4% 0.003 247.858); /* 页面底 → slate-50 */
+  --color-slate-900: oklch(100% 0 0);            /* 卡片 → 纯白 */
+  --color-slate-800: oklch(92.9% 0.013 255.508); /* 面板底/描边 → slate-200 */
+  --color-slate-700: oklch(86.9% 0.022 252.894); /* hover 描边 → slate-300 */
+  --color-slate-600: oklch(70.4% 0.04 256.788);  /* 占位/禁用 → slate-400 */
+  --color-slate-500: oklch(55.4% 0.046 257.417); /* 中灰锚点（不变） */
+  --color-slate-400: oklch(44.6% 0.043 257.281); /* 次级文本 → slate-600 */
+  --color-slate-300: oklch(37.2% 0.044 257.287); /* 三级文本 → slate-700 */
+  --color-slate-200: oklch(27.9% 0.041 260.031); /* → slate-800 */
+  --color-slate-100: oklch(20.8% 0.042 265.755); /* 主文本 → slate-900 */
+  --color-slate-50: oklch(12.9% 0.042 264.695);  /* → slate-950 */
+
+  /* ── 语义色浅档 → 深档（浅底可读） ── */
+  --color-rose-200: oklch(45.5% 0.188 13.697);
+  --color-rose-300: oklch(51.4% 0.222 16.935);
+  --color-rose-400: oklch(58.6% 0.253 17.585);
+  --color-amber-200: oklch(47.3% 0.137 46.201);
+  --color-amber-300: oklch(55.5% 0.163 48.998);
+  --color-amber-400: oklch(66.6% 0.179 58.318);
+  --color-yellow-300: oklch(55.4% 0.135 66.442);
+  --color-yellow-400: oklch(68.1% 0.162 75.834);
+  --color-emerald-200: oklch(43.2% 0.095 166.913);
+  --color-emerald-300: oklch(50.8% 0.118 165.612);
+  --color-emerald-400: oklch(59.6% 0.145 163.225);
+  --color-teal-300: oklch(51.1% 0.096 186.391);
+  --color-teal-400: oklch(60% 0.118 184.704);
+  --color-cyan-200: oklch(45% 0.085 224.283);
+  --color-cyan-300: oklch(52% 0.105 223.128);
+  --color-cyan-400: oklch(60.9% 0.126 221.723);
+  --color-sky-300: oklch(50% 0.134 242.749);
+  --color-sky-400: oklch(58.8% 0.158 241.966);
+  --color-blue-300: oklch(48.8% 0.243 264.376);
+  --color-blue-400: oklch(54.6% 0.245 262.881);
+  --color-violet-300: oklch(49.1% 0.27 292.581);
+  --color-violet-400: oklch(54.1% 0.281 293.009);
+  --color-purple-200: oklch(43.8% 0.218 303.724);
+  --color-purple-300: oklch(49.6% 0.265 301.924);
+  --color-purple-400: oklch(55.8% 0.288 302.321);
+  --color-orange-300: oklch(55.3% 0.195 38.402);
+  --color-orange-400: oklch(64.6% 0.222 41.116);
+
+  /* 品牌渐变加深（浅底上更稳） */
+  --brand-gradient: linear-gradient(
+    135deg,
+    var(--color-indigo-600) 0%,
+    var(--color-indigo-500) 55%,
+    var(--color-indigo-400) 100%
+  );
+
+  /* 浅色滚动条 */
+  --scrollbar-thumb: rgb(148 163 184 / 0.9);
+  --scrollbar-thumb-hover: rgb(100 116 139 / 0.95);
+}
+
+/* 浅色 × 肤色：肤色族浅档（200/300/400）一并换成深档，保持两维度正交 */
+[data-mode="light"][data-theme="indigo"] {
+  --color-indigo-200: oklch(45.7% 0.24 277.023);
+  --color-indigo-300: oklch(45.7% 0.24 277.023);
+  --color-indigo-400: oklch(51.1% 0.262 276.966);
+}
+[data-mode="light"][data-theme="cyan"] {
+  --color-indigo-200: oklch(52% 0.105 223.128);
+  --color-indigo-300: oklch(52% 0.105 223.128);
+  --color-indigo-400: oklch(60.9% 0.126 221.723);
+}
+[data-mode="light"][data-theme="emerald"] {
+  --color-indigo-200: oklch(50.8% 0.118 165.612);
+  --color-indigo-300: oklch(50.8% 0.118 165.612);
+  --color-indigo-400: oklch(59.6% 0.145 163.225);
+}
+[data-mode="light"][data-theme="violet"] {
+  --color-indigo-200: oklch(49.1% 0.27 292.581);
+  --color-indigo-300: oklch(49.1% 0.27 292.581);
+  --color-indigo-400: oklch(54.1% 0.281 293.009);
+}
+[data-mode="light"][data-theme="amber"] {
+  --color-indigo-200: oklch(55.5% 0.163 48.998);
+  --color-indigo-300: oklch(55.5% 0.163 48.998);
+  --color-indigo-400: oklch(66.6% 0.179 58.318);
+}
+
 /* 主题切换时的短暂全局颜色过渡（applyTheme 注入类名，约 300ms 后移除） */
 html.theme-transition,
 html.theme-transition *,
@@ -99,10 +200,10 @@ html.theme-transition *::after {
   to { opacity: 1; transform: translate(0, -50%); }
 }
 
-/* 深色细腻滚动条（Firefox + WebKit） */
+/* 细腻滚动条（Firefox + WebKit，颜色随明暗模式） */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(51 65 85 / 0.9) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 ::-webkit-scrollbar {
   width: 10px;
@@ -112,13 +213,13 @@ html.theme-transition *::after {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgb(51 65 85 / 0.9);
+  background: var(--scrollbar-thumb);
   border-radius: 8px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(71 85 105 / 0.95);
+  background: var(--scrollbar-thumb-hover);
 }
 ::-webkit-scrollbar-corner {
   background: transparent;
