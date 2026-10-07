@@ -17,6 +17,7 @@ import {
   Download,
   Server,
   FileUp,
+  History,
 } from 'lucide-react';
 import { modelApi, datasourceApi } from '../../services/api';
 
@@ -39,6 +40,14 @@ export const M13DataModelHub: React.FC = () => {
   const [diffKeyword, setDiffKeyword] = useState('');
   const [diffTypeFilter, setDiffTypeFilter] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Version management state (every import is archived; re-import bumps the version chain)
+  const [versions, setVersions] = useState<any[]>([]);
+  const [versionFrom, setVersionFrom] = useState<number | null>(null);
+  const [versionTo, setVersionTo] = useState<number | null>(null);
+  const [versionDiff, setVersionDiff] = useState<any | null>(null);
+  const [versionDiffLoading, setVersionDiffLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Import form state
   const [importName, setImportName] = useState('');
@@ -72,9 +81,34 @@ export const M13DataModelHub: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Load the version chain whenever the selected model changes
+  useEffect(() => {
+    if (!selectedModelId) {
+      setVersions([]);
+      setVersionDiff(null);
+      return;
+    }
+    let cancelled = false;
+    modelApi.versions(selectedModelId).then(list => {
+      if (cancelled) return;
+      const items = list || [];
+      setVersions(items);
+      setVersionTo(items.length > 0 ? items[0].versionNo : null);
+      // Default baseline: previous version, or explicit empty baseline (0) for v1
+      setVersionFrom(items.length > 1 ? items[1].versionNo : 0);
+      setVersionDiff(null);
+    }).catch(() => {
+      if (!cancelled) {
+        setVersions([]);
+        setVersionDiff(null);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [selectedModelId]);
+
   const handleImport = async () => {
     if (!importFile || !importName.trim()) {
-      setImportMsg('请填写模型名称并选择 .erm 文件');
+      setImportMsg('请填写模型名称并选择模型文件（.erm / .pdm）');
       return;
     }
     setImporting(true);
@@ -85,8 +119,8 @@ export const M13DataModelHub: React.FC = () => {
       formData.append('name', importName.trim());
       formData.append('targetLayer', importLayer);
       if (importDsId) formData.append('targetDataSourceId', importDsId);
-      await modelApi.import(formData);
-      setImportMsg('导入成功');
+      const imported = await modelApi.import(formData);
+      setImportMsg(`导入成功：${imported.name} ${imported.version}（${imported.tableCount} 表 / ${imported.columnCount} 字段）`);
       setImportName('');
       setImportFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -113,7 +147,59 @@ export const M13DataModelHub: React.FC = () => {
     }
   };
 
+  const runVersionDiff = async () => {
+    if (!selectedModelId || versionTo === null) return;
+    setVersionDiffLoading(true);
+    try {
+      const report = await modelApi.versionDiff(
+        selectedModelId,
+        versionFrom === null ? undefined : versionFrom,
+        versionTo
+      );
+      setVersionDiff(report);
+    } catch (e: any) {
+      alert(`版本对比失败: ${e.message}`);
+    } finally {
+      setVersionDiffLoading(false);
+    }
+  };
+
+  const handleExportDiff = async (format: 'markdown' | 'csv') => {
+    if (!selectedModelId || versionTo === null) return;
+    setExporting(true);
+    try {
+      const { fileName } = await modelApi.exportCompare(
+        selectedModelId,
+        format,
+        versionFrom === null ? undefined : versionFrom,
+        versionTo
+      );
+      setImportMsg(`差异报告已导出：${fileName}`);
+    } catch (e: any) {
+      alert(`导出失败: ${e.message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const selectedModel = models.find(m => m.id === selectedModelId);
+
+  /** Flattened version-diff rows for the compare result table. */
+  const versionDiffRows = (() => {
+    if (!versionDiff) return [] as any[];
+    const rows: any[] = [];
+    (versionDiff.tablesAdded || []).forEach((t: any) =>
+      rows.push({ type: '表新增', cls: 'text-emerald-300', table: t.table, column: '-', from: '-', to: `${t.columns} 字段` }));
+    (versionDiff.tablesRemoved || []).forEach((t: any) =>
+      rows.push({ type: '表删除', cls: 'text-rose-300', table: t.table, column: '-', from: `${t.columns} 字段`, to: '-' }));
+    (versionDiff.columnsAdded || []).forEach((c: any) =>
+      rows.push({ type: '字段新增', cls: 'text-emerald-300', table: c.table, column: c.column, from: '-', to: c.toType }));
+    (versionDiff.columnsRemoved || []).forEach((c: any) =>
+      rows.push({ type: '字段删除', cls: 'text-rose-300', table: c.table, column: c.column, from: c.fromType, to: '-' }));
+    (versionDiff.columnsChanged || []).forEach((c: any) =>
+      rows.push({ type: '字段变更', cls: 'text-amber-300', table: c.table, column: c.column, from: c.fromType, to: c.toType }));
+    return rows;
+  })();
 
   /** Filtered differences for the DIFF tab: keyword + type filter. */
   const filteredDifferences = (() => {
@@ -168,7 +254,7 @@ export const M13DataModelHub: React.FC = () => {
             <div>
               <h1 className="text-sm font-bold text-white">M13 数据模型前置管理</h1>
               <p className="text-[10px] text-slate-400">
-                导入 ERMaster 设计模型 → 与实际 ODS 库对比 → 自动评估下游分层影响
+                导入 ERMaster / PowerDesigner 设计模型 → 版本管理与对比 → 与实际 ODS 库对比 → 评估下游影响
               </p>
             </div>
           </div>
@@ -214,7 +300,7 @@ export const M13DataModelHub: React.FC = () => {
             <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-4">
               <h2 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                 <FileUp className="w-4 h-4 text-indigo-400" />
-                <span>导入 ERMaster 模型</span>
+                <span>导入设计模型</span>
               </h2>
 
               <div className="space-y-3 text-xs">
@@ -259,11 +345,11 @@ export const M13DataModelHub: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 mb-1">ERMaster 文件 (.erm)</label>
+                  <label className="block text-slate-400 mb-1">模型文件（ERMaster .erm / PowerDesigner .pdm）</label>
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".erm,.xml"
+                    accept=".erm,.xml,.pdm"
                     onChange={e => setImportFile(e.target.files?.[0] || null)}
                     className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-slate-200 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-indigo-600 file:text-white file:text-xs file:cursor-pointer"
                   />
@@ -304,7 +390,7 @@ export const M13DataModelHub: React.FC = () => {
 
               {models.length === 0 ? (
                 <div className="text-center py-8 text-slate-500 text-xs">
-                  暂无数据模型，请从左侧导入 ERMaster .erm 文件
+                  暂无数据模型，请从左侧导入 .erm / .pdm 模型文件
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -361,6 +447,165 @@ export const M13DataModelHub: React.FC = () => {
                 </button>
               )}
             </div>
+
+            {/* Version management: import history, version compare and diff export */}
+            {selectedModel && (
+              <div
+                className="lg:col-span-2 p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-4"
+                data-testid="m13-version-panel"
+              >
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h2 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <History className="w-4 h-4 text-emerald-400" />
+                    <span>版本管理 — {selectedModel.name}（{versions.length} 个版本）</span>
+                  </h2>
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <span className="text-slate-500">当前版本</span>
+                    <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">{selectedModel.version}</span>
+                    {selectedModel.sourceFormat && (
+                      <span className="px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300 border border-violet-500/30 font-mono">
+                        {selectedModel.sourceFormat}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {versions.length === 0 ? (
+                  <div className="text-center py-6 text-slate-500 text-xs">
+                    暂无版本记录 — 重新导入该模型即可生成版本快照（同名重复导入自动升版）
+                  </div>
+                ) : (
+                  <>
+                    {/* Version chain */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {versions.map(v => (
+                        <button
+                          key={v.id}
+                          onClick={() => setVersionTo(v.versionNo)}
+                          title={`${v.tableCount} 表 / ${v.columnCount} 字段${v.importedBy ? ' · ' + v.importedBy : ''}`}
+                          className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-mono transition ${
+                            versionTo === v.versionNo
+                              ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                              : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
+                          }`}
+                        >
+                          {v.versionLabel || `v${v.versionNo}`}
+                          <span className="ml-1.5 text-slate-500">{v.tableCount}表/{v.columnCount}字段</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Compare controls */}
+                    <div className="flex items-center gap-2 flex-wrap text-xs">
+                      <span className="text-slate-400">基准版本</span>
+                      <select
+                        value={versionFrom === null ? '' : String(versionFrom)}
+                        onChange={e => setVersionFrom(e.target.value === '' ? null : Number(e.target.value))}
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
+                      >
+                        <option value="0">空基线</option>
+                        {versions.map(v => (
+                          <option key={v.id} value={v.versionNo}>{v.versionLabel || `v${v.versionNo}`}</option>
+                        ))}
+                      </select>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
+                      <span className="text-slate-400">对比版本</span>
+                      <select
+                        value={versionTo === null ? '' : String(versionTo)}
+                        onChange={e => setVersionTo(e.target.value === '' ? null : Number(e.target.value))}
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
+                      >
+                        {versions.map(v => (
+                          <option key={v.id} value={v.versionNo}>{v.versionLabel || `v${v.versionNo}`}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={runVersionDiff}
+                        disabled={versionDiffLoading || versionTo === null}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold transition flex items-center gap-1.5"
+                      >
+                        {versionDiffLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <GitCompare className="w-3.5 h-3.5" />}
+                        <span>{versionDiffLoading ? '对比中...' : '版本对比'}</span>
+                      </button>
+                      <button
+                        onClick={() => handleExportDiff('markdown')}
+                        disabled={exporting || versionTo === null}
+                        className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 text-xs font-semibold transition flex items-center gap-1.5"
+                      >
+                        {exporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                        <span>导出 Markdown</span>
+                      </button>
+                      <button
+                        onClick={() => handleExportDiff('csv')}
+                        disabled={exporting || versionTo === null}
+                        className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 text-xs font-semibold transition flex items-center gap-1.5"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>导出 CSV</span>
+                      </button>
+                    </div>
+
+                    {/* Compare result */}
+                    {versionDiff && (
+                      <div className="space-y-3" data-testid="m13-version-diff-result">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                          {[
+                            { label: '表新增', value: versionDiff.summary?.tablesAdded ?? 0, cls: 'text-emerald-400' },
+                            { label: '表删除', value: versionDiff.summary?.tablesRemoved ?? 0, cls: 'text-rose-400' },
+                            { label: '字段新增', value: versionDiff.summary?.columnsAdded ?? 0, cls: 'text-emerald-400' },
+                            { label: '字段删除', value: versionDiff.summary?.columnsRemoved ?? 0, cls: 'text-rose-400' },
+                            { label: '字段变更', value: versionDiff.summary?.columnsChanged ?? 0, cls: 'text-amber-400' },
+                          ].map(item => (
+                            <div key={item.label} className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-center">
+                              <div className={`text-lg font-bold font-mono ${item.cls}`}>{item.value}</div>
+                              <div className="text-[10px] text-slate-400">{item.label}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="overflow-x-auto rounded-lg border border-slate-800">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-slate-800 text-slate-400 bg-slate-950/60">
+                                <th className="px-3 py-2 text-left font-medium">差异类型</th>
+                                <th className="px-3 py-2 text-left font-medium">表</th>
+                                <th className="px-3 py-2 text-left font-medium">字段</th>
+                                <th className="px-3 py-2 text-left font-medium">原值</th>
+                                <th className="px-3 py-2 text-left font-medium">新值</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {versionDiffRows.length === 0 ? (
+                                <tr>
+                                  <td colSpan={5} className="px-3 py-6 text-center text-slate-500">
+                                    两个版本之间无结构差异
+                                  </td>
+                                </tr>
+                              ) : (
+                                versionDiffRows.map((r, i) => (
+                                  <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
+                                    <td className={`px-3 py-2 font-medium ${r.cls}`}>{r.type}</td>
+                                    <td className="px-3 py-2 font-mono text-white">{r.table}</td>
+                                    <td className="px-3 py-2 font-mono text-slate-300">{r.column}</td>
+                                    <td className="px-3 py-2 font-mono text-slate-400">{r.from}</td>
+                                    <td className="px-3 py-2 font-mono text-slate-400">{r.to}</td>
+                                  </tr>
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div className="text-[10px] text-slate-500">
+                          对比范围: {versionDiff.fromVersion?.versionLabel || '空基线'} → {versionDiff.toVersion?.versionLabel}
+                          （合计 {versionDiff.summary?.total ?? 0} 项差异）
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
 

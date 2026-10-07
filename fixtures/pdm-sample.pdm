@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<o:RootObject Id="o1" xmlns:o="object" xmlns:a="attribute" xmlns:c="collection" xmlns:r="relationship">
+ <o:Children>
+  <o:Model Id="o2">
+   <a:ObjectID>8E6A72B1-4C3D-4F5E-9A7B-2D1C0E5F8A31</a:ObjectID>
+   <a:Name>DL_SAMPLE_PDM</a:Name>
+   <a:Code>DL_SAMPLE_PDM</a:Code>
+   <a:DBMS>Oracle 11g</a:DBMS>
+   <o:Tables>
+    <o:Table Id="o10">
+     <a:ObjectID>1A2B3C4D-0001-4000-8000-000000000010</a:ObjectID>
+     <a:Name>客户主数据</a:Name>
+     <a:Code>ODS_CRM_CUSTOMER</a:Code>
+     <a:Comment>客户主数据表</a:Comment>
+     <c:Columns>
+      <o:Column Id="o11">
+       <a:Name>客户ID</a:Name>
+       <a:Code>CUSTOMER_ID</a:Code>
+       <a:DataType>VARCHAR2(64)</a:DataType>
+       <a:Column.Mandatory>1</a:Column.Mandatory>
+       <a:Comment>客户唯一标识</a:Comment>
+      </o:Column>
+      <o:Column Id="o12">
+       <a:Name>客户名称</a:Name>
+       <a:Code>CUSTOMER_NAME</a:Code>
+       <a:DataType>VARCHAR2(128)</a:DataType>
+       <a:Column.Mandatory>1</a:Column.Mandatory>
+       <a:Comment>客户中文全称</a:Comment>
+      </o:Column>
+      <o:Column Id="o13">
+       <a:Name>客户等级</a:Name>
+       <a:Code>CUST_LEVEL</a:Code>
+       <a:DataType>VARCHAR2(16)</a:DataType>
+       <a:Comment>VIP/普通/潜在</a:Comment>
+      </o:Column>
+      <o:Column Id="o14">
+       <a:Name>创建时间</a:Name>
+       <a:Code>CREATED_AT</a:Code>
+       <a:DataType>DATETIME</a:DataType>
+       <a:Column.Mandatory>1</a:Column.Mandatory>
+       <a:Comment>入库时间</a:Comment>
+      </o:Column>
+     </c:Columns>
+     <c:Keys>
+      <o:Key Id="o15">
+       <a:Name>PK_ODS_CRM_CUSTOMER</a:Name>
+       <a:Code>PK_ODS_CRM_CUSTOMER</a:Code>
+       <c:Key.Columns>
+        <o:Column Ref="o11"/>
+       </c:Key.Columns>
+      </o:Key>
+     </c:Keys>
+     <c:PrimaryKey>
+      <o:Key Ref="o15"/>
+     </c:PrimaryKey>
+    </o:Table>
+    <o:Table Id="o20">
+     <a:ObjectID>1A2B3C4D-0002-4000-8000-000000000020</a:ObjectID>
+     <a:Name>订单主表</a:Name>
+     <a:Code>ODS_OMS_ORDER</a:Code>
+     <a:Comment>订单事实主表</a:Comment>
+     <c:Columns>
+      <o:Column Id="o21">
+       <a:Name>订单ID</a:Name>
+       <a:Code>ORDER_ID</a:Code>
+       <a:DataType>VARCHAR2(64)</a:DataType>
+       <a:Column.Mandatory>1</a:Column.Mandatory>
+       <a:Comment>订单唯一标识</a:Comment>
+      </o:Column>
+      <o:Column Id="o22">
+       <a:Name>客户ID</a:Name>
+       <a:Code>CUSTOMER_ID</a:Code>
+       <a:DataType>VARCHAR2(64)</a:DataType>
+       <a:Column.Mandatory>1</a:Column.Mandatory>
+       <a:Comment>外键: 客户主数据</a:Comment>
+      </o:Column>
+      <o:Column Id="o23">
+       <a:Name>订单状态</a:Name>
+       <a:Code>ORDER_STATUS</a:Code>
+       <a:DataType>VARCHAR2(32)</a:DataType>
+       <a:Comment>待支付/已支付/已取消</a:Comment>
+      </o:Column>
+      <o:Column Id="o24">
+       <a:Name>订单金额</a:Name>
+       <a:Code>ORDER_AMOUNT</a:Code>
+       <a:DataType>NUMBER(18)</a:DataType>
+       <a:Comment>实付金额(分)</a:Comment>
+      </o:Column>
+      <o:Column Id="o25">
+       <a:Name>创建时间</a:Name>
+       <a:Code>CREATED_AT</a:Code>
+       <a:DataType>DATETIME</a:DataType>
+       <a:Column.Mandatory>1</a:Column.Mandatory>
+       <a:Comment>下单时间</a:Comment>
+      </o:Column>
+     </c:Columns>
+     <c:Keys>
+      <o:Key Id="o26">
+       <a:Name>PK_ODS_OMS_ORDER</a:Name>
+       <a:Code>PK_ODS_OMS_ORDER</a:Code>
+       <c:Key.Columns>
+        <o:Column Ref="o21"/>
+       </c:Key.Columns>
+      </o:Key>
+     </c:Keys>
+     <c:PrimaryKey>
+      <o:Key Ref="o26"/>
+     </c:PrimaryKey>
+    </o:Table>
+    <o:Table Id="o30">
+     <a:ObjectID>1A2B3C4D-0003-4000-8000-000000000030</a:ObjectID>
+     <a:Name>订单明细</a:Name>
+     <a:Code>ODS_OMS_ORDER_ITEM</a:Code>
+     <a:Comment>订单行项目明细</a:Comment>
+     <c:Columns>
+      <o:Column Id="o31">
+       <a:Name>明细ID</a:Name>
+       <a:Code>ITEM_ID</a:Code>
+       <a:DataType>VARCHAR2(64)</a:DataType>
+       <a:Column.Mandatory>1</a:Column.Mandatory>
+       <a:Comment>行项目唯一标识</a:Comment>
+      </o:Column>
+      <o:Column Id="o32">
+       <a:Name>订单ID</a:Name>
+       <a:Code>ORDER_ID</a:Code>
+       <a:DataType>VARCHAR2(64)</a:DataType>
+       <a:Column.Mandatory>1</a:Column.Mandatory>
+       <a:Comment>外键: 订单主表</a:Comment>
+      </o:Column>
+      <o:Column Id="o33">
+       <a:Name>商品ID</a:Name>
+       <a:Code>PRODUCT_ID</a:Code>
+       <a:DataType>VARCHAR2(64)</a:DataType>
+       <a:Comment>商品唯一标识</a:Comment>
+      </o:Column>
+      <o:Column Id="o34">
+       <a:Name>购买数量</a:Name>
+       <a:Code>QUANTITY</a:Code>
+       <a:DataType>NUMBER(10)</a:DataType>
+       <a:Comment>单行购买数量</a:Comment>
+      </o:Column>
+     </c:Columns>
+     <c:Keys>
+      <o:Key Id="o35">
+       <a:Name>PK_ODS_OMS_ORDER_ITEM</a:Name>
+       <a:Code>PK_ODS_OMS_ORDER_ITEM</a:Code>
+       <c:Key.Columns>
+        <o:Column Ref="o31"/>
+       </c:Key.Columns>
+      </o:Key>
+     </c:Keys>
+     <c:PrimaryKey>
+      <o:Key Ref="o35"/>
+     </c:PrimaryKey>
+    </o:Table>
+   </o:Tables>
+   <c:References>
+    <o:Reference Id="o40">
+     <a:ObjectID>1A2B3C4D-0400-4000-8000-000000000040</a:ObjectID>
+     <a:Name>FK_ORDER_CUSTOMER</a:Name>
+     <a:Code>FK_ORDER_CUSTOMER</a:Code>
+     <o:ParentTable Ref="o10"/>
+     <o:ChildTable Ref="o20"/>
+     <c:Joins>
+      <o:ReferenceJoin Id="o41">
+       <a:ObjectID>1A2B3C4D-0410-4000-8000-000000000041</a:ObjectID>
+       <c:Object1>
+        <o:Column Ref="o11"/>
+       </c:Object1>
+       <c:Object2>
+        <o:Column Ref="o22"/>
+       </c:Object2>
+      </o:ReferenceJoin>
+     </c:Joins>
+    </o:Reference>
+    <o:Reference Id="o42">
+     <a:ObjectID>1A2B3C4D-0420-4000-8000-000000000042</a:ObjectID>
+     <a:Name>FK_ITEM_ORDER</a:Name>
+     <a:Code>FK_ITEM_ORDER</a:Code>
+     <o:ParentTable Ref="o20"/>
+     <o:ChildTable Ref="o30"/>
+     <c:Joins>
+      <o:ReferenceJoin Id="o43">
+       <a:ObjectID>1A2B3C4D-0430-4000-8000-000000000043</a:ObjectID>
+       <c:Object1>
+        <o:Column Ref="o21"/>
+       </c:Object1>
+       <c:Object2>
+        <o:Column Ref="o32"/>
+       </c:Object2>
+      </o:ReferenceJoin>
+     </c:Joins>
+    </o:Reference>
+   </c:References>
+  </o:Model>
+ </o:Children>
+</o:RootObject>

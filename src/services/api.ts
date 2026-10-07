@@ -546,6 +546,50 @@ export const modelApi = {
   listTables: (id: string) => apiFetch<any[]>(`/models/${id}/tables`),
 
   diff: (id: string) => apiFetch<any>(`/models/${id}/diff`),
+
+  // --- Version management (every import is archived, re-import bumps version) ---
+  versions: (id: string) => apiFetch<any[]>(`/models/${id}/versions`),
+
+  versionTables: (vid: string) => apiFetch<any[]>(`/model-versions/${vid}/tables`),
+
+  versionDiff: (id: string, from?: number, to?: number) => {
+    const params = new URLSearchParams();
+    if (from !== undefined) params.set('from', String(from));
+    if (to !== undefined) params.set('to', String(to));
+    const query = params.toString();
+    return apiFetch<any>(`/models/${id}/versions/diff${query ? `?${query}` : ''}`);
+  },
+
+  // Download the version-diff report (markdown / csv) via authenticated fetch
+  exportCompare: async (id: string, format: 'markdown' | 'csv', from?: number, to?: number) => {
+    const params = new URLSearchParams({ format });
+    if (from !== undefined) params.set('from', String(from));
+    if (to !== undefined) params.set('to', String(to));
+    const url = `${API_BASE}/models/${encodeURIComponent(id)}/compare/export?${params.toString()}`;
+    const token = getAuthToken();
+    const res = await fetch(url, {
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    });
+    if (res.status === 401) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      window.dispatchEvent(new Event('auth:unauthorized'));
+      throw new Error('登录已过期，请重新登录');
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="?([^";]+)"?/);
+    const fileName = match ? match[1] : `model-diff.${format === 'csv' ? 'csv' : 'md'}`;
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(objectUrl);
+    return { fileName, size: blob.size };
+  },
 };
 
 // Audit trail API (full-chain write-operation audit)

@@ -1,6 +1,8 @@
 package com.datalineage.collector;
 
-import lombok.Data;
+import com.datalineage.parser.ModelColumn;
+import com.datalineage.parser.ModelParser;
+import com.datalineage.parser.ModelTable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -45,12 +47,27 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-public class ErMasterXmlParser {
+public class ErMasterXmlParser implements ModelParser {
+
+    @Override
+    public String format() {
+        return "ERMASTER_XML";
+    }
+
+    @Override
+    public boolean supports(String fileName, String content) {
+        if (fileName != null) {
+            String lower = fileName.toLowerCase();
+            if (lower.endsWith(".erm")) return true;
+        }
+        return content != null && (content.contains("<diagram") || content.contains("normal_column"));
+    }
 
     /**
      * Parse raw .erm XML content into a list of model tables.
      * Tolerant of unknown elements and minor schema variations across versions.
      */
+    @Override
     public List<ModelTable> parse(String xmlContent) {
         List<ModelTable> tables = new ArrayList<>();
         if (xmlContent == null || xmlContent.trim().isEmpty()) {
@@ -181,30 +198,6 @@ public class ErMasterXmlParser {
                 break;
             default:
                 break;
-        }
-    }
-
-    @Data
-    public static class ModelTable {
-        private String tableName;
-        private String tableComment;
-        private List<ModelColumn> columns;
-        private List<Map<String, String>> relations;
-    }
-
-    @Data
-    public static class ModelColumn {
-        private String name;
-        private String type;
-        private Integer length;
-        private Boolean nullable = true;
-        private Boolean isPrimary = false;
-        private String comment;
-
-        /** Render type with length, e.g. varchar(64). */
-        public String getFullType() {
-            if (type == null) return "unknown";
-            return length != null && length > 0 ? type + "(" + length + ")" : type;
         }
     }
 }

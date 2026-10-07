@@ -4,10 +4,14 @@ import com.datalineage.audit.AuditLog;
 import com.datalineage.dto.ApiResponse;
 import com.datalineage.entity.DataModelEntity;
 import com.datalineage.entity.DataModelTableEntity;
+import com.datalineage.entity.DataModelVersionEntity;
 import com.datalineage.service.DataModelService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,14 +23,14 @@ import java.util.Map;
 @RestController
 @RequestMapping("/models")
 @RequiredArgsConstructor
-@Tag(name = "数据模型前置管理", description = "ERMaster 设计模型导入、与实际库对比、影响评估")
+@Tag(name = "数据模型前置管理", description = "ERMaster/PowerDesigner 设计模型导入、版本管理、与实际库对比、影响评估")
 public class DataModelController {
 
     private final DataModelService dataModelService;
 
     @PostMapping("/import")
     @AuditLog(action = "MODEL_IMPORT", resourceType = "MODEL", summary = "导入数据模型文件")
-    @Operation(summary = "导入 ERMaster 模型文件")
+    @Operation(summary = "导入模型文件（支持 ERMaster .erm / PowerDesigner .pdm，同名重复导入自动升版）")
     public ApiResponse<DataModelEntity> importModel(
             @RequestParam("file") MultipartFile file,
             @RequestParam("name") String name,
@@ -70,5 +74,37 @@ public class DataModelController {
     public ApiResponse<Map<String, Object>> compareWithDataSource(@PathVariable String id) {
         Map<String, Object> report = dataModelService.compareWithDataSource(id);
         return ApiResponse.success(report);
+    }
+
+    @GetMapping("/{id}/versions")
+    @Operation(summary = "获取模型版本历史（不含原始文件内容）")
+    public ApiResponse<List<DataModelVersionEntity>> listVersions(@PathVariable String id) {
+        return ApiResponse.success(dataModelService.listVersions(id));
+    }
+
+    @GetMapping("/{id}/versions/diff")
+    @Operation(summary = "模型版本结构对比（from/to 为版本号，缺省为上一版到最新版）")
+    public ApiResponse<Map<String, Object>> diffVersions(
+            @PathVariable String id,
+            @RequestParam(required = false) Integer from,
+            @RequestParam(required = false) Integer to) {
+        return ApiResponse.success(dataModelService.diffVersions(id, from, to));
+    }
+
+    @GetMapping("/{id}/compare/export")
+    @Operation(summary = "导出模型版本对比报告（markdown / csv）")
+    public ResponseEntity<byte[]> exportCompareReport(
+            @PathVariable String id,
+            @RequestParam(required = false) Integer from,
+            @RequestParam(required = false) Integer to,
+            @RequestParam(value = "format", defaultValue = "markdown") String format) {
+        Map<String, Object> payload = dataModelService.exportCompareReport(id, from, to, format);
+        byte[] content = (byte[]) payload.get("content");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + payload.get("fileName") + "\"")
+                .contentType(MediaType.parseMediaType(String.valueOf(payload.get("contentType"))))
+                .contentLength(content.length)
+                .body(content);
     }
 }

@@ -1,0 +1,17 @@
+PASS  1. M13 module opened
+PASS  2. version panel rendered
+PASS  3. version chain chip v2.0
+PASS  4. version chain chip v1.0
+PASS  5. source format badge PD_PDM
+PASS  6. diff result table rendered
+PASS  7. diff lists added table ODS_PRD_PRODUCT
+PASS  8. diff lists removed column CUST_LEVEL
+PASS  9. diff lists changed column 32 -> 64
+PASS  10. summary shows total 4 differences
+PASS  11. markdown download filename is .md
+PASS  12. downloaded markdown has report title
+PASS  13. downloaded markdown lists diff rows
+PASS  14. csv download filename is .csv
+PASS  15. downloaded csv contains diff rows
+PASS  16. no unexpected console errors
+===== M13 UI CHECK: 16/16 ALL PASS =====
