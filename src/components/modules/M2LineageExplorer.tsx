@@ -48,12 +48,15 @@ import { GraphLegendPanel } from '../GraphLegendPanel';
 import { FreeGraphCanvas } from '../FreeGraphCanvas';
 import { ColumnLineageBoard } from '../ColumnLineageBoard';
 import { SubsetSnapshotModal } from '../SubsetSnapshotModal';
+import { GraphSkeleton } from '../Skeleton';
 import { findShortestPath, PathResult } from '../../utils/pathFinding';
 import { LayoutAlgorithm } from '../../utils/graphLayouts';
 
 interface M2LineageExplorerProps {
   assets: Asset[];
   edges: LineageEdge[];
+  /** True only during the very first backend sync (skeleton state). */
+  isLoading?: boolean;
   initialFocusId?: string;
   isTimeTravelActive?: boolean;
   timeTravelDate?: string;
@@ -65,6 +68,7 @@ interface M2LineageExplorerProps {
 export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
   assets,
   edges,
+  isLoading = false,
   initialFocusId = 'asset:ods_crm_customer',
   isTimeTravelActive = false,
   timeTravelDate = '2026-08-01',
@@ -992,8 +996,10 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
               </div>
             )}
 
-            {/* Layout Mode Conditional View */}
-            {granularity === 'COLUMN' ? (
+            {/* Layout Mode Conditional View (skeleton during the first backend sync) */}
+            {isLoading ? (
+              <GraphSkeleton />
+            ) : granularity === 'COLUMN' ? (
               /* Column level: dedicated field-to-field mapping board (columns wired by curves) */
               <ColumnLineageBoard assets={canvasAssets} edges={visibleEdges} />
             ) : layoutMode === 'HIERARCHICAL' ? (

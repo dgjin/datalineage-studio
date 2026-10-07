@@ -7,6 +7,7 @@ import {
 } from '../../types/lineage';
 import { datasourceApi } from '../../services/api';
 import { GovernanceHealthPanel } from '../GovernanceHealthPanel';
+import { AssetListSkeleton } from '../Skeleton';
 import { 
   Search, 
   Filter, 
@@ -35,6 +36,8 @@ interface M1AssetCatalogProps {
   edges: LineageEdge[];
   changes: ChangeEvent[];
   issues: QualityIssue[];
+  /** True only during the very first backend sync (skeleton state). */
+  isLoading?: boolean;
   selectedAssetId: string | null;
   onSelectAsset: (assetId: string | null) => void;
   onExploreLineage: (assetId: string) => void;
@@ -47,6 +50,7 @@ export const M1AssetCatalog: React.FC<M1AssetCatalogProps> = ({
   edges,
   changes,
   issues,
+  isLoading = false,
   selectedAssetId,
   onSelectAsset,
   onExploreLineage,
@@ -218,8 +222,11 @@ export const M1AssetCatalog: React.FC<M1AssetCatalogProps> = ({
           </div>
         </div>
 
-        {/* Assets Table */}
+        {/* Assets Table (skeleton during the first backend sync) */}
         <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <AssetListSkeleton />
+          ) : (
           <table className="w-full text-left text-xs border-collapse">
             <thead className="sticky top-0 bg-slate-900 border-b border-slate-800 text-[11px] font-semibold text-slate-400">
               <tr>
@@ -347,6 +354,7 @@ export const M1AssetCatalog: React.FC<M1AssetCatalogProps> = ({
               )}
             </tbody>
           </table>
+          )}
         </div>
       </div>
 

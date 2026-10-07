@@ -1,0 +1,16 @@
+   HTTP 400 GET http://localhost:5173/api/v1/dashboard/asset-health/asset:ods_crm_customer
+   known probe 400 ignored: http://localhost:5173/api/v1/dashboard/asset-health/asset:ods_crm_customer
+PASS  1. M1 asset skeleton visible during first sync
+   screenshot -> screenshots/b4-m1-asset-skeleton.png
+PASS  2. asset skeleton gone after sync
+PASS  3. real asset table rendered
+PASS  4. M2 graph skeleton visible during first sync
+   screenshot -> screenshots/b4-m2-graph-skeleton.png
+PASS  5. graph skeleton gone after sync
+PASS  6. lineage swimlanes rendered
+PASS  7. crash isolated by ErrorBoundary (fallback shown)
+PASS  8. fallback shows the real error message
+PASS  9. retry button rendered
+   screenshot -> screenshots/b4-error-boundary.png
+PASS  10. retry recovers the subtree
+PASS  11. no unexpected console errors

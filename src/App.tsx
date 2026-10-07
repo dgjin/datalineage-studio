@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { Sidebar, NavTab } from './components/Sidebar';
 import { CommandPalette } from './components/CommandPalette';
 import { DesignOptimizationModal } from './components/DesignOptimizationModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Modules
 import { Workbench } from './components/modules/Workbench';
@@ -53,6 +54,9 @@ function AppShell() {
   const [timeTravelDate, setTimeTravelDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [replayEdges, setReplayEdges] = useState<LineageEdge[] | null>(null);
 
+  // First-sync tracking: skeletons cover the very first backend load only.
+  const [firstSyncDone, setFirstSyncDone] = useState<boolean>(false);
+
   // Modals
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [isDesignDocOpen, setIsDesignDocOpen] = useState<boolean>(false);
@@ -75,8 +79,16 @@ function AppShell() {
     void fetchChanges();
   }, [fetchAssets, fetchEdges, fetchChanges]);
 
-  // Load on mount, throttled refresh on tab switches, forced refresh after a collector run
-  useEffect(() => { refreshFromBackend(true); }, [refreshFromBackend]);
+  // Load on mount (tracked so skeletons cover the very first sync), throttled
+  // refresh on tab switches, forced refresh after a collector run
+  useEffect(() => {
+    let cancelled = false;
+    const s = useLineageStore.getState();
+    void Promise.allSettled([s.fetchAssets(), s.fetchEdges(), s.fetchChanges()]).then(() => {
+      if (!cancelled) setFirstSyncDone(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
   useEffect(() => { refreshFromBackend(); }, [activeTab, refreshFromBackend]);
   useEffect(() => {
     const handler = () => refreshFromBackend(true);
@@ -120,6 +132,9 @@ function AppShell() {
   const assets = hasRealData ? mappedRemoteAssets : INITIAL_ASSETS;
   const edges = hasRealData ? mappedRemoteEdges : INITIAL_EDGES;
   const changes = hasRealData && mappedRemoteChanges.length > 0 ? mappedRemoteChanges : INITIAL_CHANGES;
+
+  // Skeletons only cover the very first backend sync, before any real data lands
+  const initialLoading = !firstSyncDone && !hasRealData;
 
   // Metric center (M5): real API wins, mock fallback keeps the demo alive offline
   const [metrics, setMetrics] = useState<MetricDefinition[]>(INITIAL_METRICS);
@@ -262,8 +277,9 @@ function AppShell() {
           metricsCount={metrics.length}
         />
 
-        {/* Content Area Rendering the Selected Module */}
+        {/* Content Area Rendering the Selected Module; key resets the boundary on tab switch */}
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+          <ErrorBoundary key={activeTab} label={activeTab}>
           {activeTab === 'workbench' && (
             <Workbench
               assets={assets}
@@ -285,6 +301,7 @@ function AppShell() {
               edges={edges}
               changes={changes}
               issues={issues}
+              isLoading={initialLoading}
               selectedAssetId={selectedAssetId}
               onSelectAsset={setSelectedAssetId}
               onExploreLineage={handleExploreLineage}
@@ -297,6 +314,7 @@ function AppShell() {
             <M2LineageExplorer
               assets={assets}
               edges={isTimeTravelActive && replayEdges ? replayEdges : edges}
+              isLoading={initialLoading}
               initialFocusId={selectedAssetId || 'asset:ods_crm_customer'}
               isTimeTravelActive={isTimeTravelActive}
               timeTravelDate={timeTravelDate}
@@ -381,6 +399,7 @@ function AppShell() {
           {activeTab === 'help' && (
             <HelpCenter onNavigateTab={setActiveTab} />
           )}
+          </ErrorBoundary>
         </main>
       </div>
 
@@ -414,8 +433,10 @@ function AppShell() {
 /** Entry: hard-gates the shell behind a valid JWT session (login screen otherwise). */
 export default function App() {
   return (
-    <AuthGuard>
-      <AppShell />
-    </AuthGuard>
+    <ErrorBoundary className="h-screen w-screen">
+      <AuthGuard>
+        <AppShell />
+      </AuthGuard>
+    </ErrorBoundary>
   );
 }
