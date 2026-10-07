@@ -1,0 +1,71 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "DataLineage Studio 系统初始化向导",
+    "locale": "zh-CN",
+    "output": "docs/system-init-wizard.html",
+    "quality_profile": "showcase",
+    "views": [
+      { "id": "v-env", "label": "① 环境与账户", "focus": ["boot", "login"], "note": "Flyway 自动建表与出厂种子就绪后，admin 登录换取 JWT 会话" },
+      { "id": "v-ingest", "label": "② 数据接入", "focus": ["standards", "datasource", "collect"], "note": "命名标准为校验提供依据；数据源与采集任务产出资产与字段" },
+      { "id": "v-lineage", "label": "③ 血缘构建", "focus": ["import", "graph"], "note": "分层导入重建跨源血缘边，到 M2 核验 teal 跨源线与列级映射" },
+      { "id": "v-govern", "label": "④ 治理与核验", "focus": ["validation", "metric", "dashboard"], "note": "校验与指标产出治理数据，M9 看板确认系统全面运行" }
+    ]
+  },
+  "lanes": [
+    { "id": "setup", "label": "环境 · 账户" },
+    { "id": "data", "label": "数据接入与血缘" },
+    { "id": "gov", "label": "治理与核验（M7 · M5 · M9）" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "阶段一 · 环境与账户", "fromCol": 0, "toCol": 1 },
+    { "id": "p2", "label": "阶段二 · 数据接入", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "p3", "label": "阶段三 · 治理与核验", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": ["boot", "login", "datasource", "collect", "import", "validation", "metric", "dashboard"],
+  "semanticChecks": {
+    "allowedRoots": ["boot", "standards"],
+    "allowedTerminals": ["dashboard", "graph"]
+  },
+  "nodes": [
+    { "id": "boot", "lane": "setup", "col": 0, "width": 96, "type": "cloud", "label": "启动平台", "sublabel": "MySQL · 后端 · 前端", "tag": "建表 + 种子" },
+    { "id": "login", "lane": "setup", "col": 1, "width": 96, "type": "security", "label": "管理员登录", "sublabel": "admin 登录换 JWT", "tag": "RBAC 会话" },
+    { "id": "datasource", "lane": "data", "col": 1, "width": 96, "type": "backend", "label": "M11 注册数据源", "sublabel": "贴源 / 数仓 / 应用库", "tag": "连接就绪" },
+    { "id": "collect", "lane": "data", "col": 2, "width": 96, "type": "backend", "label": "M10 采集与触发", "sublabel": "资产/字段 · 分层 · 校验", "tag": "资产入库" },
+    { "id": "standards", "lane": "gov", "col": 2, "width": 98, "type": "backend", "label": "M12 标准中枢", "sublabel": "内置标准 · 术语 · 参考码", "tag": "命名依据" },
+    { "id": "import", "lane": "data", "col": 3, "width": 104, "type": "backend", "label": "M10 分层导入", "sublabel": "同名匹配 / ETL → 跨源边", "tag": "跨源血缘" },
+    { "id": "validation", "lane": "gov", "col": 3, "width": 100, "type": "backend", "label": "M7 执行校验", "sublabel": "8 规则 → 台账 + 计数", "tag": "问题台账" },
+    { "id": "graph", "lane": "data", "col": 4, "width": 96, "type": "frontend", "label": "M2 血缘核验", "sublabel": "teal 跨源边 · 列级映射", "tag": "图谱可查" },
+    { "id": "metric", "lane": "gov", "col": 4, "width": 96, "type": "backend", "label": "M5 指标发布", "sublabel": "列门禁 → 写指标历史", "tag": "指标历史" },
+    { "id": "dashboard", "lane": "gov", "col": 5, "width": 104, "type": "frontend", "label": "M9 看板核验", "sublabel": "健康分 · 覆盖率 · 计数非零", "tag": "全面运行" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "boot", "to": "login", "role": "main" },
+    { "id": "e2", "from": "login", "to": "datasource", "role": "main", "variant": "emphasis", "label": "写接口凭 JWT" },
+    { "id": "e3", "from": "datasource", "to": "collect", "role": "main", "label": "绑定分层" },
+    { "id": "e8", "from": "standards", "to": "collect", "role": "branch", "variant": "dashed", "label": "命名校验依据" },
+    { "id": "e4", "from": "collect", "to": "import", "role": "main", "variant": "emphasis", "label": "资产就绪" },
+    { "id": "e5", "from": "import", "to": "validation", "role": "main", "variant": "emphasis" },
+    { "id": "e9", "from": "import", "to": "graph", "role": "branch", "label": "核验跨源边" },
+    { "id": "e6", "from": "validation", "to": "metric", "role": "main" },
+    { "id": "e7", "from": "metric", "to": "dashboard", "role": "main", "variant": "emphasis", "label": "健康分" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "阶段一 · 环境与账户", "items": [
+      "启动即 Flyway：30 表 + 出厂种子",
+      "种子：8 规则 / 5 标准 / 9 参考码",
+      "admin 换 JWT；写接口缺 Bearer 即 401"
+    ]},
+    { "dot": "cyan", "title": "阶段二 · 数据接入与血缘", "items": [
+      "M11 → M10 采集：assets / columns",
+      "采集即命名校验：违规写 quality_issues",
+      "分层导入跨源边：同名 70 / ETL 85–95"
+    ]},
+    { "dot": "violet", "title": "阶段三 · 治理与核验", "items": [
+      "M7 八规则 → issues + hit_count",
+      "M5 门禁校验引用列 → metric_history",
+      "M9 四项非零即全面运行；再采集查漂移"
+    ]}
+  ]
+}
