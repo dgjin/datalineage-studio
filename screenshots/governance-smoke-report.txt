@@ -3,8 +3,8 @@
 3. M9 分层明细 visible: 5
 4. M12 标准卡片 STD-NAMING-001 visible: 0
 5. M12 标准名称 visible: 0
-6. M12 词根 tab 内容 (amt/gmv): 0
-7. M12 编码集 ORDER_STATUS visible: 0
+6. M12 词根 tab 内容 (amt/gmv): 2
+7. M12 编码集 ORDER_STATUS visible: 2
 8. M4 待审批变更 ods_orders visible: 0
 9. M4 审批门禁区 visible: 1
 console errors: ["Failed to load resource: net::ERR_FAILED"]

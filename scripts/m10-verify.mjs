@@ -55,7 +55,9 @@ ok('5. data source name resolved from API', (await page.locator('text=应用层M
 const today = new Date();
 const mmdd = String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
 ok('6. SUCCESS badge rendered', (await page.locator('span:has-text("SUCCESS")').count()) > 0);
-ok('7. last run time shows today (' + mmdd + ')', (await page.locator('text=' + mmdd).count()) > 0);
+// Pre-run the freshest lastRunAt depends on the dataset; assert the MM-DD HH:mm
+// rendering. The "today" assertion moves to after this script's own run.
+ok('7. last run time rendered as MM-DD HH:mm', (await page.locator('text=/\\d{2}-\\d{2} \\d{2}:\\d{2}/').count()) > 0);
 await page.screenshot({ path: OUT + '/m10-tasks.png' });
 
 // Trigger the first task and observe the polled progress/finish
@@ -77,6 +79,8 @@ ok('8. run finished, success banner rendered (polled run-status)', finished);
 await page.waitForTimeout(1200);
 ok('9. run button restored to idle', (await page.locator('button:has-text("立即采集")').count()) >= 1);
 ok('10. refreshed last-run duration visible', (await page.locator('text=上次').count()) > 0);
+// The run just finished in this script, so the refreshed lastRunAt must be today
+ok('10b. refreshed last run stamped today (' + mmdd + ')', (await page.locator('text=' + mmdd).count()) > 0);
 await page.screenshot({ path: OUT + '/m10-run-done.png' });
 
 // console errors

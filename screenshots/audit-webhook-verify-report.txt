@@ -19,4 +19,4 @@ PASS  17. audit: POST /assets derived as action=CREATE
 PASS  18. audit: filterable by action (COLLECT_RUN query ok)
 PASS  19. audit: WEBHOOK_DELETE recorded
 PASS  20. metric webhook.deliveries.total exposed
-PASS  21. successful deliveries counted (5)
+PASS  21. successful deliveries counted (3)
