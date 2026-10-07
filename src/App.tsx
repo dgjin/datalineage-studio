@@ -21,6 +21,7 @@ import { M11DataSourceManager } from './components/modules/M11DataSourceManager'
 import { M12StandardsHub } from './components/modules/M12StandardsHub';
 import { M13DataModelHub } from './components/modules/M13DataModelHub';
 import { HelpCenter } from './components/modules/HelpCenter';
+import { InitWizard } from './components/modules/InitWizard';
 
 // Mock initial data
 import {
@@ -339,6 +340,10 @@ function AppShell() {
               }}
               onSimulateChange={handleSimulateChange}
             />
+          )}
+
+          {activeTab === 'wizard' && (
+            <InitWizard />
           )}
 
           {activeTab === 'catalog' && (

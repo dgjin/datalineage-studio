@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Database, GitFork, AlertOctagon, Binary, FileCode, X, ArrowRight, LifeBuoy } from 'lucide-react';
+import { Search, Database, GitFork, AlertOctagon, Binary, FileCode, X, ArrowRight, LifeBuoy, Rocket } from 'lucide-react';
 import { Asset, MetricDefinition, ValidationRule } from '../types/lineage';
 
 interface CommandPaletteProps {
@@ -118,6 +118,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 >
                   <Binary className="w-4 h-4 text-cyan-400" />
                   <span>178 项核心指标库 (M5)</span>
+                </button>
+                <button
+                  onClick={() => { onNavigateTab('wizard'); onClose(); }}
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-sky-300 transition text-left"
+                >
+                  <Rocket className="w-4 h-4 text-sky-400" />
+                  <span>系统初始化向导 · 三阶段上手</span>
                 </button>
                 <button
                   onClick={() => { onNavigateTab('help'); onClose(); }}
