@@ -76,7 +76,7 @@ public class JdbcSchemaCollector {
             
             // Get schemas to scan
             notifyProgress(listener, 15, "解析目标 Schema");
-            List<String> schemas = getTargetSchemas(task, metaData);
+            List<String> schemas = getTargetSchemas(task, metaData, ds);
             result.setSchemasScanned(schemas.size());
             
             for (int i = 0; i < schemas.size(); i++) {
@@ -144,19 +144,44 @@ public class JdbcSchemaCollector {
         }
     }
 
-    private List<String> getTargetSchemas(MetadataCollectTaskEntity task, DatabaseMetaData metaData) 
-            throws SQLException {
+    private List<String> getTargetSchemas(MetadataCollectTaskEntity task, DatabaseMetaData metaData,
+                                          DataSourceEntity ds) throws SQLException {
         if (task.getTargetSchemas() != null && !task.getTargetSchemas().isEmpty()) {
             return task.getTargetSchemas();
         }
-        
+
+        // MySQL maps databases to JDBC catalogs: with the default databaseTerm=CATALOG
+        // getSchemas() yields an empty set, so catalogs must be enumerated instead
+        // (mirrors DataSourceService.getSchemas) — otherwise the scan list is empty
+        // and the run finishes with zero tables. System namespaces are never targets.
         List<String> schemas = new ArrayList<>();
-        try (ResultSet rs = metaData.getSchemas()) {
-            while (rs.next()) {
-                schemas.add(rs.getString("TABLE_SCHEM"));
+        boolean mysql = "MYSQL".equalsIgnoreCase(ds.getType());
+        if (mysql) {
+            try (ResultSet rs = metaData.getCatalogs()) {
+                while (rs.next()) {
+                    String name = rs.getString("TABLE_CAT");
+                    if (name != null && !isSystemSchema(name)) {
+                        schemas.add(name);
+                    }
+                }
+            }
+        } else {
+            try (ResultSet rs = metaData.getSchemas()) {
+                while (rs.next()) {
+                    String name = rs.getString("TABLE_SCHEM");
+                    if (name != null && !isSystemSchema(name)) {
+                        schemas.add(name);
+                    }
+                }
             }
         }
         return schemas;
+    }
+
+    private static boolean isSystemSchema(String name) {
+        String lower = name.toLowerCase();
+        return "information_schema".equals(lower) || "mysql".equals(lower)
+                || "performance_schema".equals(lower) || "sys".equals(lower);
     }
 
     private void collectSchema(Connection conn, DatabaseMetaData metaData, String schema, 
