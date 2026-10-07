@@ -31,11 +31,21 @@ import {
   X
 } from 'lucide-react';
 
+// Bundled demo discussions, loaded only while demo mode is ON; quasi-production
+// starts empty and user comments stay local to the session.
+const DEMO_DISCUSSIONS: Record<string, { author: string; time: string; text: string }[]> = {
+  'asset:ods_crm_customer': [
+    { author: '陈敏 (数据数仓组)', time: '2026-09-28 16:00', text: '已收到 phone 列拟废弃通知，DWD 层正在使用 phone_hash 替代下游关联，请架构师把关。' },
+    { author: '张伟 (CRM架构师)', time: '2026-09-28 16:30', text: '好，目前已在 CI 开启卡点保护，等所有下游确认后再合并发布。' }
+  ]
+};
+
 interface M1AssetCatalogProps {
   assets: Asset[];
   edges: LineageEdge[];
   changes: ChangeEvent[];
   issues: QualityIssue[];
+  demoMode: boolean;
   /** True only during the very first backend sync (skeleton state). */
   isLoading?: boolean;
   selectedAssetId: string | null;
@@ -50,6 +60,7 @@ export const M1AssetCatalog: React.FC<M1AssetCatalogProps> = ({
   edges,
   changes,
   issues,
+  demoMode,
   isLoading = false,
   selectedAssetId,
   onSelectAsset,
@@ -75,12 +86,12 @@ export const M1AssetCatalog: React.FC<M1AssetCatalogProps> = ({
       })
       .catch(() => {});
   }, []);
-  const [comments, setComments] = useState<Record<string, { author: string; time: string; text: string }[]>>({
-    'asset:ods_crm_customer': [
-      { author: '陈敏 (数据数仓组)', time: '2026-09-28 16:00', text: '已收到 phone 列拟废弃通知，DWD 层正在使用 phone_hash 替代下游关联，请架构师把关。' },
-      { author: '张伟 (CRM架构师)', time: '2026-09-28 16:30', text: '好，目前已在 CI 开启卡点保护，等所有下游确认后再合并发布。' }
-    ]
-  });
+  const [comments, setComments] = useState<Record<string, { author: string; time: string; text: string }[]>>({});
+
+  // Swap in the bundled discussions only while demo mode is ON
+  useEffect(() => {
+    setComments(demoMode ? DEMO_DISCUSSIONS : {});
+  }, [demoMode]);
 
   // Filter assets
   const filteredAssets = assets.filter(asset => {

@@ -84,6 +84,12 @@ export const M4ChangeCenter: React.FC<M4ChangeCenterProps> = ({
     }
   }, [selectedChange]);
 
+  // Contract patch is generated from the selected change's own records — the raw
+  // DDL diff (when present) is embedded as a YAML block, never hardcoded columns.
+  const patchRawDiff = selectedChange?.details?.rawDiff;
+  const patchDiffBlock = patchRawDiff
+    ? `diff: |\n${patchRawDiff.split('\n').map((l: string) => `  ${l}`).join('\n')}`
+    : '# 本次变更未携带原始 DDL 差异，请从生产库反向比对后补录';
   const generatedContractPatch = `# =========================================================
 # 由 DataLineage Studio 针对生产暗改自动反向生成的契约补丁
 # 资产: ${selectedChange?.assetName}
@@ -91,24 +97,13 @@ export const M4ChangeCenter: React.FC<M4ChangeCenterProps> = ({
 # =========================================================
 schemaVersion: 2.0
 dataset: ${selectedChange?.assetName}
-domain: crm
 status: PENDING_REVIEW
 managedBy: GitOps
 
-# 差异合并补丁
-columns:
-  - name: id
-    type: BIGINT
-    nullable: false
-    primaryKey: true
-  - name: secret_note
-    type: TEXT
-    nullable: true
-    description: "由生产环境反向同步发现的新字段，需核验数据合规性"
-    sensitivity: CONFIDENTIAL
-    pii: true
+# 差异合并补丁（取自本次变更记录的原始 DDL 差异）
+${patchDiffBlock}
 
-auditNote: "反向补录已自动生成 MR !135，请架构师执行代码审查后合并。"`;
+auditNote: 反向补录请提交 Merge Request，经架构师代码审查后合并。`;
 
   // Release note is generated from the currently selected real change event —
   // never from hardcoded demo text referencing unrelated assets.

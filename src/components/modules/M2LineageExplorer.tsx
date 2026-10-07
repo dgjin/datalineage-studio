@@ -69,7 +69,7 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
   assets,
   edges,
   isLoading = false,
-  initialFocusId = 'asset:ods_crm_customer',
+  initialFocusId = '',
   isTimeTravelActive = false,
   timeTravelDate = '2026-08-01',
   currentSpace = 'crm',
@@ -86,8 +86,8 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set([initialFocusId]));
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
   const [pathFinderOpen, setPathFinderOpen] = useState(false);
-  const [pathStart, setPathStart] = useState<string>('asset:ods_crm_customer');
-  const [pathEnd, setPathEnd] = useState<string>('asset:api:vip_customer_query');
+  const [pathStart, setPathStart] = useState<string>('');
+  const [pathEnd, setPathEnd] = useState<string>('');
   const [activePath, setActivePath] = useState<PathResult | null>(null);
   const [isPathHighlighted, setIsPathHighlighted] = useState(false);
   const [filterToPathOnly, setFilterToPathOnly] = useState(false);
@@ -109,8 +109,8 @@ export const M2LineageExplorer: React.FC<M2LineageExplorerProps> = ({
   const [filterToSubsetOnly, setFilterToSubsetOnly] = useState<boolean>(false);
   const [isSubsetSnapshotOpen, setIsSubsetSnapshotOpen] = useState<boolean>(false);
 
-  // Keep the path finder endpoints bound to real assets when the dataset switches
-  // from mock seeds (asset:ods_crm_customer) to backend-collected assets.
+  // Keep the path finder endpoints bound to real assets whenever the dataset
+  // changes (demo switch or first backend sync).
   useEffect(() => {
     if (assets.length === 0) return;
     const ids = new Set(assets.map(a => a.id));

@@ -35,7 +35,7 @@ interface M3ImpactAnalysisProps {
 
 export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
   assets,
-  defaultAssetId = 'asset:ods_crm_customer',
+  defaultAssetId = '',
   onExploreLineage
 }) => {
   const [selectedAssetId, setSelectedAssetId] = useState<string>(defaultAssetId);

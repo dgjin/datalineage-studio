@@ -13,7 +13,7 @@ import {
   Sliders, 
   FileCode, 
   Plus, 
-  Clock, 
+  Info, 
   ArrowRight,
   Layers,
   Database,
@@ -73,7 +73,6 @@ const taskBadge = (status?: string) => {
 export const M10CollectorAdmin: React.FC<M10CollectorAdminProps> = ({ collectors }) => {
   const auth = useAuth();
   const writable = canWrite(auth);
-  const [testingId, setTestingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<'COLLECTORS' | 'LAYER_IMPORT' | 'METAMODEL'>('COLLECTORS');
 
@@ -174,12 +173,13 @@ export const M10CollectorAdmin: React.FC<M10CollectorAdminProps> = ({ collectors
     return () => window.clearInterval(timer);
   }, [anyRunning]);
 
+  // No adapter-level credential-test endpoint exists yet: surface an honest hint
+  // instead of faking a connectivity success.
   const handleTestConnection = (id: string) => {
-    setTestingId(id);
-    setTimeout(() => {
-      setTestResult(prev => ({ ...prev, [id]: '连接成功 (Ping: 12ms, 权限校验正常)' }));
-      setTestingId(null);
-    }, 500);
+    setTestResult(prev => ({
+      ...prev,
+      [id]: '适配器凭据在采集运行时统一校验，请运行一次采集任务完成端到端连通性验证'
+    }));
   };
 
   const sampleMetaModelYaml = `# ==============================================================
@@ -469,26 +469,16 @@ relationTypes:
 
                   <button
                     onClick={() => handleTestConnection(col.id)}
-                    disabled={testingId === col.id}
                     className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition font-medium flex items-center gap-1"
                   >
-                    {testingId === col.id ? (
-                      <>
-                        <Clock className="w-3 h-3 animate-spin" />
-                        <span>测试中...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-3 h-3" />
-                        <span>凭据测试</span>
-                      </>
-                    )}
+                    <Play className="w-3 h-3" />
+                    <span>凭据测试</span>
                   </button>
                 </div>
 
                 {testResult[col.id] && (
-                  <div className="p-2 bg-emerald-950/40 border border-emerald-500/30 rounded text-emerald-300 text-[11px] flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <div className="p-2 bg-indigo-950/40 border border-indigo-500/30 rounded text-indigo-200 text-[11px] flex items-center gap-1.5">
+                    <Info className="w-3.5 h-3.5 text-indigo-400" />
                     <span>{testResult[col.id]}</span>
                   </div>
                 )}

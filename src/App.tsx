@@ -44,9 +44,11 @@ function AppShell() {
   const [activeTab, setActiveTab] = useState<NavTab>('workbench');
   const [currentSpace, setCurrentSpace] = useState<string>('all');
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('ARCHITECT');
-  const [selectedAssetId, setSelectedAssetId] = useState<string | null>('asset:ods_crm_customer');
-  const [simulateAssetId, setSimulateAssetId] = useState<string>('asset:ods_crm_customer');
-  const [contractRef, setContractRef] = useState<string>('contracts/crm/customer.yaml');
+  // Focus selectors start empty and are remapped to real assets by the sync
+  // effect below (demo mode remaps them to the bundled dataset).
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const [simulateAssetId, setSimulateAssetId] = useState<string>('');
+  const [contractRef, setContractRef] = useState<string>('');
 
   // Time travel historical replay state: the date defaults to today ("now" snapshot),
   // and while active the edge set is fetched from the bitemporal replay API.
@@ -345,6 +347,7 @@ function AppShell() {
               edges={edges}
               changes={changes}
               issues={viewIssues}
+              demoMode={demoMode}
               isLoading={initialLoading}
               selectedAssetId={selectedAssetId}
               onSelectAsset={setSelectedAssetId}
