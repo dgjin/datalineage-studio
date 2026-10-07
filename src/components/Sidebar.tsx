@@ -80,6 +80,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
     });
   }, []);
 
+  // Rail-mode tooltip: floats next to the hovered/focused icon. Rendered with
+  // position:fixed so the scrollable nav's overflow never clips it.
+  const [tip, setTip] = useState<{ label: string; badge: string | null; top: number; left: number } | null>(null);
+
+  const showTip = (
+    item: NavItem,
+    e: React.MouseEvent<HTMLButtonElement> | React.FocusEvent<HTMLButtonElement>
+  ) => {
+    if (!collapsed) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTip({ label: item.label, badge: item.badge, top: rect.top + rect.height / 2, left: rect.right + 16 });
+  };
+  const hideTip = () => setTip(null);
+
+  // Drop the tooltip whenever the rail expands or the nav scrolls
+  useEffect(() => { setTip(null); }, [collapsed]);
+
   // Cmd/Ctrl+B toggles the rail (VS Code convention)
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -131,7 +148,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      <nav className="flex-1 px-2 space-y-1 overflow-y-auto overflow-x-hidden">
+      <nav className="flex-1 px-2 space-y-1 overflow-y-auto overflow-x-hidden" onScroll={hideTip}>
         {mainNav.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -139,7 +156,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
-              title={collapsed ? `${item.label}${item.badge ? ` · ${item.badge}` : ''}` : undefined}
+              aria-label={item.label}
+              onMouseEnter={(e) => showTip(item, e)}
+              onMouseLeave={hideTip}
+              onFocus={(e) => showTip(item, e)}
+              onBlur={hideTip}
               className={`relative w-full flex items-center py-2 rounded-lg text-xs font-medium transition group ${
                 collapsed ? 'justify-center px-0' : 'justify-between px-2.5'
               } ${
@@ -195,6 +216,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
       </div>
+
+      {/* Rail-mode icon tooltip bubble */}
+      {collapsed && tip && (
+        <div
+          className="fixed z-50 pointer-events-none"
+          style={{ top: tip.top, left: tip.left }}
+          role="tooltip"
+        >
+          <div className="relative flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-slate-800 border border-slate-700 shadow-xl shadow-slate-950/50 text-xs text-slate-100 whitespace-nowrap animate-[rail-tooltip-in_150ms_ease-out_both]">
+            <span className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-800 border-l border-b border-slate-700 rotate-45" />
+            <span className="relative">{tip.label}</span>
+            {tip.badge && (
+              <span className="relative text-[10px] px-1 py-0.5 rounded bg-slate-700/80 text-slate-300 font-mono">{tip.badge}</span>
+            )}
+          </div>
+        </div>
+      )}
     </aside>
   );
 };
