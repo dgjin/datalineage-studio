@@ -69,6 +69,22 @@ public class DataModelController {
         return ApiResponse.success(dataModelService.listModelTables(id));
     }
 
+    @PutMapping("/{id}")
+    @AuditLog(action = "MODEL_UPDATE", resourceType = "MODEL", summary = "更新数据模型元数据")
+    @Operation(summary = "更新模型元数据（名称 / 目标分层 / 状态 / 对比数据源，空串解除数据源绑定）")
+    public ApiResponse<DataModelEntity> updateModel(@PathVariable String id,
+                                                    @RequestBody Map<String, Object> updates) {
+        return ApiResponse.success(dataModelService.updateModel(id, updates), "Model updated successfully");
+    }
+
+    @DeleteMapping("/{id}")
+    @AuditLog(action = "MODEL_DELETE", resourceType = "MODEL", summary = "删除数据模型（连带表结构与版本历史）")
+    @Operation(summary = "删除模型及其表结构快照与版本历史")
+    public ApiResponse<Void> deleteModel(@PathVariable String id) {
+        dataModelService.deleteModel(id);
+        return ApiResponse.success(null, "Model deleted successfully");
+    }
+
     @GetMapping("/{id}/diff")
     @Operation(summary = "模型与实际 ODS 库对比（含自动影响评估）")
     public ApiResponse<Map<String, Object>> compareWithDataSource(@PathVariable String id) {

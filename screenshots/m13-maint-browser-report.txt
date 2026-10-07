@@ -1,0 +1,11 @@
+PASS  1. navigated to M13
+PASS  2. edit buttons rendered on model cards
+PASS  3. delete buttons rendered on model cards
+PASS  4. edit modal opened
+PASS  5. modal prefilled with model name
+PASS  6. save succeeded, notice rendered ("已更新")
+PASS  7. status restored to DRAFT (dataset hygiene)
+   dialog: 确认删除模型「PDM 冒烟模型」？将连带删除其表结构快照（4 张表 / 16 字段）与全部版本历史，操作不可恢复。
+PASS  8. delete confirmation dialog appears with cascade hint
+PASS  9. dismissing the dialog keeps the model
+PASS  10. no console errors

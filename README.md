@@ -61,6 +61,7 @@ npx vite --port 5173        # 或 npm run dev（:3000）
 | 变更 Webhook | change.created / approval.decided / standard.violation 事件异步投递；HMAC-SHA256 签名；M8 配置弹窗（CRUD + 测试发送） |
 | 前端健壮性 | 全局 + 模块级 ErrorBoundary（单模块崩溃不白屏）；首同步骨架屏 |
 | M13 模型增强 | 支持 ERMaster `.erm` 与 PowerDesigner `.pdm`；同名重导自动升版（v1/v2…）；版本回放与对比；差异导出 markdown/csv |
+| 模型维护 | 已导入模型可重命名 / 改目标分层、状态、对比数据源 / 整体删除（`PUT /models/{id}` · `DELETE /models/{id}`，连带表结构快照与版本历史，同级名称冲突拦截，写操作自动审计） |
 | 高可用部署 | 双后端实例 + nginx 网关（故障转移），共享 JWT 无状态；多架构镜像（amd64/arm64） |
 
 ## Docker 部署

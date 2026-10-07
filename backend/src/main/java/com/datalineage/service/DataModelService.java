@@ -1,6 +1,7 @@
 package com.datalineage.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.datalineage.entity.AssetColumnEntity;
 import com.datalineage.entity.AssetEntity;
 import com.datalineage.entity.DataModelEntity;
@@ -55,6 +56,10 @@ public class DataModelService {
     private final AssetColumnMapper assetColumnMapper;
     private final DataSourceService dataSourceService;
     private final ImpactAnalysisService impactAnalysisService;
+
+    /** Allowed enum values for model metadata maintenance. */
+    private static final Set<String> MODEL_LAYERS = Set.of("ODS", "DWD", "DWS", "ADS", "APP");
+    private static final Set<String> MODEL_STATUSES = Set.of("DRAFT", "BASELINE", "ARCHIVED");
 
     // ------------------------------------------------------------------
     // Import
@@ -135,6 +140,76 @@ public class DataModelService {
 
     public DataModelEntity getModel(String id) {
         return dataModelMapper.selectById(id);
+    }
+
+    // ------------------------------------------------------------------
+    // Maintenance: update metadata / delete (snapshot + version cascade)
+    // ------------------------------------------------------------------
+
+    /**
+     * Update model metadata (rename / re-target layer or data source / status).
+     * Only the keys present in {@code updates} are applied; {@code targetDataSourceId}
+     * accepts a blank value to clear the binding. Renaming guards against clashes
+     * because same-name imports share one version chain.
+     */
+    @Transactional
+    public DataModelEntity updateModel(String id, Map<String, Object> updates) {
+        requireModel(id);
+
+        UpdateWrapper<DataModelEntity> patch = new UpdateWrapper<>();
+        patch.eq("id", id);
+
+        String name = text(updates.get("name"));
+        if (name != null) {
+            Long clash = dataModelMapper.selectCount(new QueryWrapper<DataModelEntity>()
+                    .eq("name", name).ne("id", id));
+            if (clash != null && clash > 0) {
+                throw new BusinessException("已存在同名数据模型：「" + name + "」，同名导入会合并到同一版本链");
+            }
+            patch.set("name", name);
+        }
+        String targetLayer = text(updates.get("targetLayer"));
+        if (targetLayer != null) {
+            if (!MODEL_LAYERS.contains(targetLayer)) {
+                throw new BusinessException("非法目标分层: " + targetLayer + "（可选 ODS/DWD/DWS/ADS/APP）");
+            }
+            patch.set("target_layer", targetLayer);
+        }
+        String status = text(updates.get("status"));
+        if (status != null) {
+            if (!MODEL_STATUSES.contains(status)) {
+                throw new BusinessException("非法状态: " + status + "（可选 DRAFT/BASELINE/ARCHIVED）");
+            }
+            patch.set("status", status);
+        }
+        if (updates.containsKey("targetDataSourceId")) {
+            // Blank clears the binding; updateById would skip a null field
+            patch.set("target_data_source_id", text(updates.get("targetDataSourceId")));
+        }
+        patch.set("updated_at", LocalDateTime.now());
+        dataModelMapper.update(null, patch);
+
+        log.info("Data model {} metadata updated (keys={})", id, updates.keySet());
+        return requireModel(id);
+    }
+
+    /** Delete a model together with its table snapshots and version history. */
+    @Transactional
+    public void deleteModel(String id) {
+        DataModelEntity model = requireModel(id);
+        // Explicit child cleanup: the FKs cascade as well, but not every legacy DB has them
+        dataModelTableMapper.delete(new QueryWrapper<DataModelTableEntity>().eq("model_id", id));
+        dataModelVersionMapper.delete(new QueryWrapper<DataModelVersionEntity>().eq("model_id", id));
+        dataModelMapper.deleteById(id);
+        log.info("Data model {} ({}) deleted with {} table snapshots and its version history",
+                id, model.getName(), model.getTableCount());
+    }
+
+    /** Trimmed string value of a patch field, or null when absent/blank. */
+    private static String text(Object value) {
+        if (value == null) return null;
+        String s = String.valueOf(value).trim();
+        return s.isEmpty() ? null : s;
     }
 
     public List<DataModelTableEntity> listModelTables(String modelId) {

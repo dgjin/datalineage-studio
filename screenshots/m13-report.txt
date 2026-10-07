@@ -1,9 +1,9 @@
-baseline: existing model=5ef25f9a900b4991307771c0983bc502, maxVersionNo=2
-PASS  1.1 .pdm imported as v3.0
+baseline: existing model=5ef25f9a900b4991307771c0983bc502, maxVersionNo=4
+PASS  1.1 .pdm imported as v5.0
 PASS  1.2 sourceFormat = PD_PDM
 PASS  1.3 tableCount = 3
 PASS  1.4 columnCount = 13
-PASS  2.1 same-name re-import bumps to v4.0
+PASS  2.1 same-name re-import bumps to v6.0
 PASS  2.2 same model id reused
 PASS  2.3 tableCount = 4 after v2
 PASS  2.4 columnCount = 16 after v2
@@ -21,7 +21,7 @@ PASS  4.7 added table is ODS_PRD_PRODUCT
 PASS  4.8 removed column is CUST_LEVEL
 PASS  4.9 changed column ORDER_STATUS 32 -> 64
 PASS  4.10 added column PRODUCT_NAME in ORDER_ITEM
-PASS  4.11 fromVersion label v3.0
+PASS  4.11 fromVersion label v5.0
 PASS  5.1 baseline: fromVersion = null
 PASS  5.2 baseline adds all 4 v2 tables
 PASS  6.1 replayed v1 has 3 tables
@@ -43,4 +43,22 @@ PASS  9.4 csv TABLE_ADDED row
 PASS  9.5 csv COLUMN_CHANGED row
 PASS  10.1 empty parse rejected (400)
 PASS  10.2 error message mentions supported formats
-===== M13 VERIFY: 44/44 ALL PASS =====
+PASS  11.1 maintenance probe model imported (status DRAFT)
+PASS  11.2 rename applied
+PASS  11.3 targetLayer updated to DWS
+PASS  11.4 status updated to BASELINE
+PASS  11.5 datasource binding updated
+PASS  11.6 update persisted on re-read
+PASS  11.7 duplicate name rejected (400)
+PASS  11.8 clash message explains same-name import merge
+PASS  11.9 invalid targetLayer rejected
+PASS  11.10 invalid status rejected
+PASS  11.11 blank clears datasource binding
+PASS  11.12 version snapshot archived before delete
+PASS  11.13 delete returns 200
+PASS  11.14 deleted model removed from list
+PASS  11.15 detail of deleted model = 404
+PASS  11.16 versions of deleted model rejected
+PASS  11.17 audit trail has MODEL_UPDATE entry
+PASS  11.18 audit trail has MODEL_DELETE entry
+===== M13 VERIFY: 62/62 ALL PASS =====

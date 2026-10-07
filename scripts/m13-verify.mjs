@@ -155,6 +155,80 @@ ok('9.5 csv COLUMN_CHANGED row', csvText.includes('COLUMN_CHANGED,ODS_OMS_ORDER,
   ok('10.2 error message mentions supported formats', (json.message || '').includes('ERMaster') || (json.message || '').includes('支持'));
 }
 
+// --- 11. Model maintenance: metadata update / delete ---
+const MAINT_NAME = 'PDM 维护冒烟模型';
+const MAINT_NAME_V2 = MAINT_NAME + ' v2';
+
+// Clean up leftovers from a previous interrupted run
+const allModels = await apiJson('GET', '/models');
+const leftover = allModels.find((m) => m.name === MAINT_NAME || m.name === MAINT_NAME_V2);
+if (leftover) {
+  await fetch(`${BASE}/models/${leftover.id}`, { method: 'DELETE', headers: auth });
+}
+
+const maint = await importPdm(`${ROOT}/fixtures/pdm-sample.pdm`, MAINT_NAME);
+ok('11.1 maintenance probe model imported (status DRAFT)', !!maint.id && maint.status === 'DRAFT');
+
+// 11.2-11.5 update every metadata field at once
+const dsList = await apiJson('GET', '/datasources');
+const dsId = dsList[0]?.id;
+const putJson = async (id, payload) => {
+  const res = await fetch(`${BASE}/models/${id}`, {
+    method: 'PUT',
+    headers: { ...auth, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return { status: res.status, json: await res.json().catch(() => ({})) };
+};
+const upd = (await putJson(maint.id, {
+  name: MAINT_NAME_V2, targetLayer: 'DWS', status: 'BASELINE', targetDataSourceId: dsId,
+})).json.data;
+ok('11.2 rename applied', upd?.name === MAINT_NAME_V2);
+ok('11.3 targetLayer updated to DWS', upd?.targetLayer === 'DWS');
+ok('11.4 status updated to BASELINE', upd?.status === 'BASELINE');
+ok('11.5 datasource binding updated', !!dsId && upd?.targetDataSourceId === dsId);
+
+// 11.6 re-read confirms persistence
+const reread = await apiJson('GET', `/models/${maint.id}`);
+ok('11.6 update persisted on re-read', reread.name === MAINT_NAME_V2 && reread.status === 'BASELINE');
+
+// 11.7 rename clash against an existing model name is rejected
+const clash = await putJson(maint.id, { name: MODEL_NAME });
+ok('11.7 duplicate name rejected (400)', clash.status === 400 || clash.json.code === 400);
+ok('11.8 clash message explains same-name import merge', (clash.json.message || '').includes('同名'));
+
+// 11.9 invalid enum values are rejected
+const badLayer = await putJson(maint.id, { targetLayer: 'FOO' });
+ok('11.9 invalid targetLayer rejected', badLayer.status === 400 || badLayer.json.code === 400);
+const badStatus = await putJson(maint.id, { status: 'FOO' });
+ok('11.10 invalid status rejected', badStatus.status === 400 || badStatus.json.code === 400);
+
+// 11.11 blank datasource clears the binding
+const unbind = (await putJson(maint.id, { targetDataSourceId: '' })).json.data;
+ok('11.11 blank clears datasource binding', unbind?.targetDataSourceId == null);
+
+// 11.12 version history is intact before deletion
+const maintVersions = await apiJson('GET', `/models/${maint.id}/versions`);
+ok('11.12 version snapshot archived before delete', maintVersions.length === 1 && maintVersions[0].tableCount === 3);
+
+// 11.13-11.16 delete removes model + children atomically
+const delRes = await fetch(`${BASE}/models/${maint.id}`, { method: 'DELETE', headers: auth });
+ok('11.13 delete returns 200', delRes.status === 200);
+const afterList = await apiJson('GET', '/models');
+ok('11.14 deleted model removed from list', !afterList.some((m) => m.id === maint.id));
+const gone = await fetch(`${BASE}/models/${maint.id}`, { headers: auth });
+const goneJson = await gone.json().catch(() => ({}));
+ok('11.15 detail of deleted model = 404', gone.status === 404 || goneJson.code === 404);
+const goneVersions = await fetch(`${BASE}/models/${maint.id}/versions`, { headers: auth });
+const goneVersionsJson = await goneVersions.json().catch(() => ({}));
+ok('11.16 versions of deleted model rejected', goneVersions.status >= 400 || goneVersionsJson.code >= 400);
+
+// 11.17-11.18 both maintenance writes are on the audit trail
+const auditUpd = await apiJson('GET', '/audit-logs?action=MODEL_UPDATE&page=1&size=20');
+ok('11.17 audit trail has MODEL_UPDATE entry', (auditUpd.records || []).some((r) => r.path === `/api/v1/models/${maint.id}`));
+const auditDel = await apiJson('GET', '/audit-logs?action=MODEL_DELETE&page=1&size=20');
+ok('11.18 audit trail has MODEL_DELETE entry', (auditDel.records || []).some((r) => r.path === `/api/v1/models/${maint.id}`));
+
 // --- Report ---
 const passed = report.filter((l) => l.startsWith('PASS')).length;
 const total = report.filter((l) => l.startsWith('PASS') || l.startsWith('FAIL')).length;

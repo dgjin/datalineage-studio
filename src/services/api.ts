@@ -545,6 +545,18 @@ export const modelApi = {
 
   listTables: (id: string) => apiFetch<any[]>(`/models/${id}/tables`),
 
+  // Maintenance: rename / re-target layer or datasource / status; blank datasource clears the binding
+  update: (id: string, data: { name?: string; targetLayer?: string; status?: string; targetDataSourceId?: string | null }) =>
+    apiFetch<any>(`/models/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  // Delete the model together with its table snapshots and version history
+  remove: (id: string) => apiFetch<void>(`/models/${id}`, {
+    method: 'DELETE',
+  }),
+
   diff: (id: string) => apiFetch<any>(`/models/${id}/diff`),
 
   // --- Version management (every import is archived, re-import bumps version) ---

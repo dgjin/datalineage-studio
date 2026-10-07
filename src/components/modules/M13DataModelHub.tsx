@@ -18,6 +18,9 @@ import {
   Server,
   FileUp,
   History,
+  Pencil,
+  Trash2,
+  X,
 } from 'lucide-react';
 import { modelApi, datasourceApi } from '../../services/api';
 
@@ -55,6 +58,14 @@ export const M13DataModelHub: React.FC = () => {
   const [importDsId, setImportDsId] = useState('');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+
+  // Model maintenance state (rename / re-target / status / delete)
+  const [editingModel, setEditingModel] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', targetLayer: 'ODS', status: 'DRAFT', targetDataSourceId: '' });
+  const [editError, setEditError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [maintainMsg, setMaintainMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -183,6 +194,65 @@ export const M13DataModelHub: React.FC = () => {
   };
 
   const selectedModel = models.find(m => m.id === selectedModelId);
+
+  // ---- Model maintenance actions ----
+
+  const openEditModal = (m: any) => {
+    setEditForm({
+      name: m.name || '',
+      targetLayer: m.targetLayer || 'ODS',
+      status: m.status || 'DRAFT',
+      targetDataSourceId: m.targetDataSourceId || '',
+    });
+    setEditError(null);
+    setEditingModel(m);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingModel) return;
+    if (!editForm.name.trim()) {
+      setEditError('模型名称不能为空');
+      return;
+    }
+    setSaving(true);
+    setEditError(null);
+    try {
+      const updated = await modelApi.update(editingModel.id, {
+        name: editForm.name.trim(),
+        targetLayer: editForm.targetLayer,
+        status: editForm.status,
+        targetDataSourceId: editForm.targetDataSourceId,
+      });
+      setEditingModel(null);
+      setMaintainMsg(`模型「${updated.name}」已更新（目标分层 ${updated.targetLayer} · 状态 ${updated.status}）`);
+      load();
+    } catch (e: any) {
+      setEditError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteModel = async (m: any) => {
+    if (!confirm(`确认删除模型「${m.name}」？将连带删除其表结构快照（${m.tableCount} 张表 / ${m.columnCount} 字段）与全部版本历史，操作不可恢复。`)) return;
+    setDeleting(true);
+    setMaintainMsg(null);
+    try {
+      await modelApi.remove(m.id);
+      const list = await modelApi.list();
+      setModels(list);
+      if (selectedModelId === m.id) {
+        setSelectedModelId(list.length > 0 ? list[0].id : null);
+        setVersionDiff(null);
+      }
+      if (diffReport && diffReport.modelName === m.name) setDiffReport(null);
+      setMaintainMsg(`模型「${m.name}」已删除（含表结构快照与版本历史）`);
+    } catch (e: any) {
+      setMaintainMsg(`删除失败: ${e.message}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   /** Flattened version-diff rows for the compare result table. */
   const versionDiffRows = (() => {
@@ -388,6 +458,16 @@ export const M13DataModelHub: React.FC = () => {
                 <span>已导入模型 ({models.length})</span>
               </h2>
 
+              {maintainMsg && (
+                <div className={`p-2.5 rounded-lg text-[11px] ${
+                  maintainMsg.includes('失败')
+                    ? 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+                    : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
+                }`}>
+                  {maintainMsg}
+                </div>
+              )}
+
               {models.length === 0 ? (
                 <div className="text-center py-8 text-slate-500 text-xs">
                   暂无数据模型，请从左侧导入 .erm / .pdm 模型文件
@@ -411,13 +491,34 @@ export const M13DataModelHub: React.FC = () => {
                             {m.version}
                           </span>
                         </div>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${
-                          m.status === 'BASELINE'
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                            : 'bg-slate-800 text-slate-400 border-slate-700'
-                        }`}>
-                          {m.status}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${
+                            m.status === 'BASELINE'
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                              : m.status === 'ARCHIVED'
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                : 'bg-slate-800 text-slate-400 border-slate-700'
+                          }`}>
+                            {m.status}
+                          </span>
+                          <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
+                            <button
+                              onClick={() => openEditModal(m)}
+                              title="编辑模型元数据"
+                              className="p-1 rounded text-slate-500 hover:text-indigo-300 hover:bg-slate-800 transition"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteModel(m)}
+                              disabled={deleting}
+                              title="删除模型（连带表结构与版本历史）"
+                              className="p-1 rounded text-slate-500 hover:text-rose-300 hover:bg-slate-800 disabled:opacity-50 transition"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                       <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-400">
                         <span className="flex items-center gap-1">
@@ -855,6 +956,111 @@ export const M13DataModelHub: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Model maintenance modal: rename / re-target layer, datasource / status */}
+      {editingModel && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => { if (!saving) setEditingModel(null); }}
+        >
+          <div
+            className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4"
+            onClick={e => e.stopPropagation()}
+            data-testid="m13-edit-modal"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-white flex items-center gap-2">
+                <Pencil className="w-3.5 h-3.5 text-indigo-400" />
+                <span>维护模型 — {editingModel.name}</span>
+              </h3>
+              <button
+                onClick={() => setEditingModel(null)}
+                disabled={saving}
+                className="p-1 rounded text-slate-500 hover:text-slate-300 hover:bg-slate-800 disabled:opacity-50 transition"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1">模型名称</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-slate-200 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">目标分层</label>
+                  <select
+                    value={editForm.targetLayer}
+                    onChange={e => setEditForm(f => ({ ...f, targetLayer: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-slate-200 focus:outline-none focus:border-indigo-500"
+                  >
+                    {['ODS', 'DWD', 'DWS', 'ADS', 'APP'].map(l => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">状态</label>
+                  <select
+                    value={editForm.status}
+                    onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-slate-200 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="DRAFT">DRAFT（草稿）</option>
+                    <option value="BASELINE">BASELINE（基线）</option>
+                    <option value="ARCHIVED">ARCHIVED（归档）</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1">对比数据源</label>
+                <select
+                  value={editForm.targetDataSourceId}
+                  onChange={e => setEditForm(f => ({ ...f, targetDataSourceId: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-slate-200 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="">不绑定</option>
+                  {dataSources.map(ds => (
+                    <option key={ds.id} value={ds.id}>{ds.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {editError && (
+                <div className="p-2.5 rounded-lg text-[11px] bg-rose-500/10 border border-rose-500/30 text-rose-300">
+                  {editError}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setEditingModel(null)}
+                disabled={saving}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 text-xs font-semibold transition"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={saving}
+                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition flex items-center gap-1.5"
+              >
+                {saving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                <span>{saving ? '保存中...' : '保存'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
