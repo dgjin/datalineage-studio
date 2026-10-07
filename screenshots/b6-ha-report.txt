@@ -1,0 +1,49 @@
+================================================================================
+Batch 6 HA verification - 2026-10-07 20:31:53
+================================================================================
+
+[1] docker-compose config validation
+  compose config: OK
+
+[2] Dual instance health (docker inspect)
+  backend-1: healthy
+  backend-2: healthy
+
+[3] Through nginx gateway (frontend :8088)
+  GET /                             -> 200
+  GET /healthz                      -> 200
+  GET /api/v1/actuator/health #1    -> 200
+  GET /api/v1/actuator/health #2    -> 200
+  GET /api/v1/actuator/health #3    -> 200
+  GET /api/v1/actuator/health #4    -> 200
+
+[4] Login via gateway, then authenticated API
+    (plan example /dashboard/summary does not exist; using the real
+     endpoints DashboardController exposes: /dashboard/overview, /assets)
+  token issued: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiO...
+  GET /api/v1/dashboard/overview    -> 200
+  GET /api/v1/assets                -> 200
+
+[5] Failover: stop backend-2, same token must keep working via backend-1
+  GET /api/v1/dashboard/overview #1 -> 200
+  GET /api/v1/dashboard/overview #2 -> 200
+  GET /api/v1/dashboard/overview #3 -> 200
+  GET /api/v1/dashboard/overview #4 -> 200
+  GET /api/v1/dashboard/overview #5 -> 200
+
+[6] Restore backend-2, stop backend-1: token must work via backend-2
+  backend-2 healthy again
+  GET /api/v1/dashboard/overview #1 -> 200
+  GET /api/v1/dashboard/overview #2 -> 200
+  GET /api/v1/dashboard/overview #3 -> 200
+
+[7] Restore backend-1, final dual-instance state
+  backend-1 healthy again
+  backend-1 final: healthy
+  backend-2 final: healthy
+
+NAME                       STATUS
+datalineage-backend-ha-1   Up 10 seconds (healthy)
+datalineage-backend-ha-2   Up 29 seconds (healthy)
+datalineage-frontend-ha    Up 52 seconds (healthy)
+datalineage-mysql-ha       Up 2 minutes (healthy)

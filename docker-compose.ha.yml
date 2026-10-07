@@ -1,0 +1,77 @@
+# High-availability topology: two stateless backend instances behind the
+# nginx frontend gateway (single image, JWT is stateless so both instances
+# accept each other's tokens). MySQL stays single-node - explicitly out of
+# scope per the implementation plan.
+#
+# Start : docker-compose -f docker-compose.ha.yml up -d --build
+# Verify: curl -sf http://localhost:8088/api/v1/actuator/health
+# Fail  : docker stop datalineage-backend-ha-2  -> requests still served by backend-1
+
+x-backend-common: &backend-common
+  image: datalineage-backend:ha
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  depends_on:
+    mysql:
+      condition: service_healthy
+  environment: &backend-env
+    SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/datalineage?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    SPRING_DATASOURCE_USERNAME: root
+    SPRING_DATASOURCE_PASSWORD: root123
+    ENCRYPT_KEY: datalineage-secret-key-2026
+    # Shared secret across instances: tokens issued by one node are valid on the other
+    JWT_SECRET: DataLineageStudio-JwtSecret-2026-HaMode-0123456789abcdef
+  healthcheck:
+    test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/v1/actuator/health"]
+    interval: 15s
+    timeout: 5s
+    start_period: 90s
+    retries: 5
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: datalineage-mysql-ha
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: datalineage
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      # 3306/3307 are commonly taken by local dev databases
+      - "3308:3306"
+    volumes:
+      - mysql_ha_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot123"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+    restart: unless-stopped
+
+  backend-1:
+    <<: *backend-common
+    container_name: datalineage-backend-ha-1
+
+  backend-2:
+    <<: *backend-common
+    container_name: datalineage-backend-ha-2
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: datalineage-frontend-ha
+    ports:
+      - "8088:80"
+    environment:
+      BACKEND_SERVERS: "server backend-1:8080; server backend-2:8080;"
+    depends_on:
+      - backend-1
+      - backend-2
+    restart: unless-stopped
+
+volumes:
+  mysql_ha_data:

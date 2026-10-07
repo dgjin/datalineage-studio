@@ -1,0 +1,18 @@
+# Keep the frontend build context small and deterministic.
+# (Dockerfile.frontend builds from the repo root.)
+node_modules
+dist
+.git
+.gitignore
+.env
+.env.*
+screenshots
+docs
+scripts
+fixtures
+backend
+databus
+metadata.json
+README.md
+*.log
+.DS_Store

@@ -1,0 +1,5 @@
+# The image builds from source (mvn package inside the builder stage);
+# a locally built target/ only bloats the build context.
+target
+*.log
+.DS_Store
