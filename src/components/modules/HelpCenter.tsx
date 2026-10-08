@@ -24,9 +24,19 @@ import {
   Lightbulb,
   Terminal,
   HelpCircle,
-  Workflow
+  Workflow,
+  Home,
+  Rocket,
+  Database,
+  Binary,
+  FileCheck2,
+  Inbox,
+  ClipboardList,
+  ChevronDown,
+  X
 } from 'lucide-react';
 import { NavTab } from '../Sidebar';
+import { MODULE_MANUAL } from '../../data/moduleManual';
 
 type HelpRole = 'USER' | 'ADMIN';
 
@@ -78,6 +88,25 @@ const TONES: Record<string, ToneSet> = {
     icon: 'text-teal-400',
     chapter: 'from-teal-500/60',
   },
+};
+
+/** Icon keys referenced by moduleManual.ts entries (kept out of the data file). */
+const MANUAL_ICONS: Record<string, React.ElementType> = {
+  home: Home,
+  rocket: Rocket,
+  database: Database,
+  gitfork: GitFork,
+  alert: AlertOctagon,
+  activity: Activity,
+  binary: Binary,
+  filecheck: FileCheck2,
+  shieldalert: ShieldAlert,
+  inbox: Inbox,
+  chart: BarChart3,
+  cpu: Cpu,
+  server: Server,
+  book: BookOpen,
+  lifebuoy: LifeBuoy,
 };
 
 interface FlowStep {
@@ -350,6 +379,32 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
     detailRefs.current[`${role}-${seq}`]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  // ---- Full-module idiot-proof manual state ----
+  const [manualQuery, setManualQuery] = useState('');
+  const [openModules, setOpenModules] = useState<Record<string, boolean>>({ workbench: true });
+  const manualRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const manualTopRef = useRef<HTMLElement | null>(null);
+
+  const mq = manualQuery.trim().toLowerCase();
+  const visibleManual = MODULE_MANUAL.filter(m => {
+    if (!mq) return true;
+    const hay = [
+      m.title, m.badge, m.slogan, m.role,
+      ...m.features.flatMap(f => [f.name, f.desc]),
+      ...m.flow.flatMap(s => [s.name, s.doing]),
+      ...(m.tips ?? []),
+    ].join(' ').toLowerCase();
+    return hay.includes(mq);
+  });
+  const isModuleOpen = (id: string) => (mq ? true : !!openModules[id]);
+  const toggleModule = (id: string) =>
+    setOpenModules(prev => ({ ...prev, [id]: !(prev[id] ?? false) }));
+  const scrollToModule = (id: string) => {
+    setOpenModules(prev => ({ ...prev, [id]: true }));
+    setTimeout(() => manualRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  };
+  const manualFeatureTotal = MODULE_MANUAL.reduce((n, m) => n + m.features.length, 0);
+
   return (
     <div className="flex-1 flex flex-col overflow-y-auto bg-slate-950 p-6 space-y-6">
       {/* ================= Banner ================= */}
@@ -365,7 +420,8 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
             </h1>
             <p className="text-xs text-slate-300 leading-relaxed mt-1.5 max-w-3xl">
               选择你的角色：<strong>用户</strong>聚焦「发现问题 → 定位 → 探查 → 评估 → 处置 → 验证」日常闭环；
-              <strong>管理员</strong>聚焦「接入 → 采集 → 导入 → 标准 → 校验 → 监控」配置管理闭环。点击流程图节点可直达对应分步说明。
+              <strong>管理员</strong>聚焦「接入 → 采集 → 导入 → 标准 → 校验 → 监控」配置管理闭环。点击流程图节点可直达对应分步说明；
+              需要查某个模块的完整功能与点击路径，请用下方「全模块傻瓜手册」。
             </p>
           </div>
 
@@ -394,6 +450,14 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
               <Wrench className="w-3.5 h-3.5" />
               <span>管理员配置管理</span>
               <span className="text-[10px] opacity-70">7 步配置闭环</span>
+            </button>
+            <button
+              onClick={() => manualTopRef.current?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition border bg-slate-800/70 text-slate-300 border-slate-700 hover:bg-slate-800"
+            >
+              <ClipboardList className="w-3.5 h-3.5" />
+              <span>全模块傻瓜手册</span>
+              <ArrowDown className="w-3 h-3" />
             </button>
           </div>
         </div>
@@ -549,6 +613,174 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* ================= Full-Module Idiot-Proof Manual ================= */}
+      <section ref={el => { manualTopRef.current = el; }} className="space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+            <ClipboardList className="w-4 h-4 text-indigo-400" />
+            <span>全模块傻瓜手册</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 font-mono">
+              {MODULE_MANUAL.length} 模块 · {manualFeatureTotal} 项功能
+            </span>
+          </h2>
+          <span className="text-[10px] text-slate-400 font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-800">
+            点卡片标题展开 · 每模块含「能做什么 + 怎么点」
+          </span>
+        </div>
+
+        {/* Toolbar: search + bulk expand + module chips */}
+        <div className="p-3 bg-slate-900/60 border border-slate-800 rounded-2xl space-y-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[240px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+              <input
+                value={manualQuery}
+                onChange={e => setManualQuery(e.target.value)}
+                placeholder="搜索模块 / 功能 / 操作（如：导出、停用、审批、豁免、采集）"
+                className="w-full pl-8 pr-8 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              />
+              {manualQuery && (
+                <button
+                  onClick={() => setManualQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-200"
+                  title="清空搜索"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => setOpenModules(Object.fromEntries(MODULE_MANUAL.map(m => [m.id, true] as const)))}
+              className="px-3 py-2 rounded-lg text-[11px] font-semibold bg-slate-800/70 text-slate-300 border border-slate-700 hover:bg-slate-800 transition"
+            >
+              全部展开
+            </button>
+            <button
+              onClick={() => setOpenModules({})}
+              className="px-3 py-2 rounded-lg text-[11px] font-semibold bg-slate-800/70 text-slate-300 border border-slate-700 hover:bg-slate-800 transition"
+            >
+              全部收起
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {visibleManual.map(m => {
+              const tone = TONES[m.tone];
+              const Icon = MANUAL_ICONS[m.icon] ?? LifeBuoy;
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => scrollToModule(m.id)}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-950 border border-slate-800 hover:border-indigo-500/40 text-[10px] font-semibold text-slate-300 transition"
+                >
+                  <Icon className={`w-3 h-3 ${tone.icon}`} />
+                  <span>{m.title}</span>
+                  <span className="font-mono text-slate-500">{m.badge}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {mq && (
+            <div className="text-[10px] text-slate-500">
+              关键词「{manualQuery}」匹配 {visibleManual.length} 个模块（匹配时全部自动展开）
+            </div>
+          )}
+        </div>
+
+        {/* Module cards */}
+        <div className="space-y-2.5">
+          {visibleManual.map(m => {
+            const tone = TONES[m.tone];
+            const Icon = MANUAL_ICONS[m.icon] ?? LifeBuoy;
+            const open = isModuleOpen(m.id);
+            return (
+              <div
+                key={m.id}
+                ref={el => { manualRefs.current[m.id] = el; }}
+                className={`bg-slate-900 border rounded-xl transition ${open ? 'border-indigo-500/40' : 'border-slate-800'}`}
+              >
+                <button onClick={() => toggleModule(m.id)} className="w-full flex items-center gap-3 p-3.5 text-left">
+                  <div className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${tone.badge}`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${tone.badge}`}>{m.badge}</span>
+                      <span className="text-xs font-bold text-slate-100">{m.title}</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">{m.role}</span>
+                    </div>
+                    <p className="text-[10.5px] text-slate-400 truncate mt-0.5">{m.slogan}</p>
+                  </div>
+                  <span className="hidden sm:block text-[10px] text-slate-500 font-mono shrink-0">
+                    {m.features.length} 功能 · {m.flow.length} 步流程
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-slate-500 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                </button>
+
+                {open && (
+                  <div className="px-3.5 pb-3.5 pt-3 border-t border-slate-800/70 space-y-3">
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                      {/* Features: what it can do */}
+                      <div className="space-y-1.5">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">功能说明 · 能做什么</div>
+                        {m.features.map((f, fi) => (
+                          <div key={fi} className="flex gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/70">
+                            <ChevronRight className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${tone.icon}`} />
+                            <p className="text-[11px] leading-relaxed">
+                              <span className="font-semibold text-slate-200">{f.name}</span>
+                              <span className="text-slate-400"> — {f.desc}</span>
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Flow: how to click through */}
+                      <div className="space-y-1.5">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">操作流程 · 怎么点</div>
+                        {m.flow.map((s, si) => (
+                          <div key={si} className="flex gap-2.5 p-2 rounded-lg bg-slate-950/60 border border-slate-800/70">
+                            <span className={`w-5 h-5 rounded-full border text-[10px] font-mono flex items-center justify-center shrink-0 ${tone.badge}`}>
+                              {si + 1}
+                            </span>
+                            <div className="min-w-0">
+                              <div className="text-[11px] font-semibold text-slate-200">{s.name}</div>
+                              <div className="text-[10.5px] text-slate-400 leading-relaxed">{s.doing}</div>
+                            </div>
+                          </div>
+                        ))}
+                        {(m.tips ?? []).map((t, ti) => (
+                          <div key={ti} className="flex gap-2 p-2 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[10.5px] text-amber-200/90 leading-relaxed">
+                            <Lightbulb className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400" />
+                            <span>{t}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => onNavigateTab(m.tab)}
+                        className="text-[11px] px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 transition flex items-center gap-1"
+                      >
+                        <span>前往模块实操</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {visibleManual.length === 0 && (
+            <div className="p-6 text-center text-xs text-slate-500 bg-slate-900 border border-dashed border-slate-800 rounded-xl">
+              没有匹配的模块或功能，换个关键词试试（例如：导出 / 停用 / 审批 / 豁免 / 血缘 / 采集）
+            </div>
+          )}
         </div>
       </section>
 

@@ -1,0 +1,11 @@
+PASS  manual section header visible
+PASS  feature/flow subtitles visible
+PASS  module count badge = 16 modules
+PASS  chips render for all modules
+PASS  M11 card expanded with flow
+PASS  search hint shows match count
+PASS  search keeps M2 (导出图谱) and M9 (周报导出)
+PASS  non-matching module filtered out (M11 gone)
+PASS  expand-all renders 16 feature sections (got 16)
+PASS  collapse-all hides bodies (got 0)
+PASS  no console errors (got 0)
