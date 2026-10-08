@@ -15,9 +15,11 @@ import {
   AlertTriangle,
   Flame,
   Layers,
-  ChevronRight
+  ChevronRight,
+  GitCommit
 } from 'lucide-react';
 import { Asset, ChangeEvent, QualityIssue, MetricDefinition } from '../../types/lineage';
+import { APP_VERSION, formatVersionTime } from '../../utils/appVersion';
 
 interface WorkbenchProps {
   assets: Asset[];
@@ -46,9 +48,19 @@ export const Workbench: React.FC<WorkbenchProps> = ({
       {/* Welcome Banner */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-950/80 via-slate-900 to-slate-950 border border-indigo-500/30 p-6 shadow-2xl">
         <div className="relative z-10 max-w-2xl space-y-2">
-          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>通用数据血缘与变更治理平台 (Universal Data Mesh Lineage)</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-xs font-semibold">
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <span>通用数据血缘与变更治理平台 (Universal Data Mesh Lineage)</span>
+            </div>
+            {/* Current version: git-derived, auto-synced on every update */}
+            <span
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-800/70 text-slate-300 border border-slate-700 text-[11px] font-mono"
+              title={`当前版本 ${APP_VERSION.version}\n提交 ${APP_VERSION.commit} · 分支 ${APP_VERSION.branch}\n提交时间 ${formatVersionTime(APP_VERSION.commitDate)}\n构建时间 ${formatVersionTime(APP_VERSION.buildTime)}`}
+            >
+              <GitCommit className="w-3 h-3 text-emerald-400" />
+              <span>{APP_VERSION.version}</span>
+            </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-100 tracking-tight">
             以血缘图谱为核心、以变更事件为驱动、以契约与校验为底线
@@ -239,6 +251,18 @@ export const Workbench: React.FC<WorkbenchProps> = ({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Version footer: auto-synced from git (dev refreshes on page load, builds freeze it) */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 px-4 py-2.5 bg-slate-900/60 border border-slate-800 rounded-xl text-[11px] text-slate-400 font-mono">
+        <span className="flex items-center gap-1.5 text-slate-200 font-semibold">
+          <GitCommit className="w-3.5 h-3.5 text-emerald-400" />
+          <span>当前版本 {APP_VERSION.version}</span>
+        </span>
+        <span>提交 {APP_VERSION.commit}</span>
+        <span>分支 {APP_VERSION.branch}</span>
+        <span>提交时间 {formatVersionTime(APP_VERSION.commitDate)}</span>
+        <span>构建时间 {formatVersionTime(APP_VERSION.buildTime)}</span>
       </div>
     </div>
   );

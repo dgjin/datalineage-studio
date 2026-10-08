@@ -18,6 +18,7 @@ import {
   PanelLeftOpen
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { APP_VERSION } from '../utils/appVersion';
 
 export type NavTab =
   | 'workbench'
@@ -207,8 +208,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </span>
               <span className="text-[10px] text-emerald-400 font-mono">T0~T2 正常</span>
             </div>
-            <div className="text-[10px] text-slate-400">
-              图谱版本: <span className="text-slate-400 font-mono">v2026.09-bi</span>
+            <div className="text-[10px] text-slate-400" title={`提交 ${APP_VERSION.commit} · 分支 ${APP_VERSION.branch}`}>
+              图谱版本: <span className="text-slate-400 font-mono">{APP_VERSION.version}</span>
             </div>
           </div>
         )}
