@@ -408,7 +408,10 @@ export const impactApi = {
   },
   
   getReport: (id: string) => apiFetch<any>(`/impact/reports/${id}`),
-  
+
+  listAcks: (changeId: string) =>
+    apiFetch<any[]>(`/impact/acks?changeId=${encodeURIComponent(changeId)}`),
+
   acknowledge: (ack: any) => apiFetch<any>('/impact/acks', {
     method: 'POST',
     body: JSON.stringify(ack),

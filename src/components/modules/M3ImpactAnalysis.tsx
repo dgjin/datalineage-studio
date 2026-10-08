@@ -105,32 +105,57 @@ export const M3ImpactAnalysis: React.FC<M3ImpactAnalysisProps> = ({
         columnName: useColumn ? (selectedColumn || undefined) : undefined,
       });
 
-      // Link an existing open change event for this asset so Ack persists against it
+      // Link a change event for this simulation scenario so acks persist and are
+      // re-read on every re-run. Prefer the latest open event; otherwise fall back
+      // to the most recent event of the same scenario (byAsset is timestamp-desc)
+      // so confirmations survive even after the change was resolved.
       let linkedChange: any = null;
       try {
         const existing = await changeApi.byAsset(selectedAsset.id);
-        linkedChange = (existing ?? []).find(
+        const open = (existing ?? []).find(
           (c: any) => !['RESOLVED', 'REJECTED'].includes(c.status),
-        ) ?? null;
+        );
+        const sameScenario = (existing ?? []).find(
+          (c: any) => c.changeType === changeType && c.status !== 'REJECTED',
+        );
+        linkedChange = open ?? sameScenario ?? null;
       } catch { /* linking is optional */ }
       setLinkedChangeId(linkedChange?.id ?? null);
+
+      // Hydrate persisted acknowledgments so re-running the simulation no longer
+      // resets previously confirmed / exempted objects back to PENDING.
+      const ackByObject = new Map<string, any>();
+      if (linkedChange?.id) {
+        try {
+          const acks = await impactApi.listAcks(linkedChange.id);
+          (acks ?? []).forEach((a: any) => {
+            if (a.objectId) ackByObject.set(a.objectId, a); // newest row wins
+          });
+        } catch { /* ack hydration is optional */ }
+      }
 
       const nameById = new Map(assets.map(a => [a.id, a.name]));
       const impacted: any[] = sim.impactedAssets ?? [];
 
-      const directImpacts: ImpactItem[] = impacted.map((a: any) => ({
-        id: `imp:${a.assetId}`,
-        objectId: a.assetId,
-        objectName: `${a.displayTitle ?? a.assetName} (${a.assetName})`,
-        type: a.type,
-        distance: a.distance,
-        via: a.isCriticalPath
-          ? `关键传播链路 · ${a.distance} 跳`
-          : `血缘传播 · ${a.distance} 跳`,
-        owner: a.owner ?? '未指定',
-        department: a.department ?? '—',
-        ackStatus: 'PENDING',
-      }));
+      const directImpacts: ImpactItem[] = impacted.map((a: any) => {
+        const prior = ackByObject.get(a.assetId);
+        const ackStatus: ImpactItem['ackStatus'] =
+          prior?.ackStatus === 'ACKED' || prior?.ackStatus === 'EXEMPTED' ? prior.ackStatus : 'PENDING';
+        return {
+          id: `imp:${a.assetId}`,
+          objectId: a.assetId,
+          objectName: `${a.displayTitle ?? a.assetName} (${a.assetName})`,
+          type: a.type,
+          distance: a.distance,
+          via: a.isCriticalPath
+            ? `关键传播链路 · ${a.distance} 跳`
+            : `血缘传播 · ${a.distance} 跳`,
+          owner: a.owner ?? '未指定',
+          department: a.department ?? '—',
+          ackStatus,
+          exemptReason: ackStatus === 'EXEMPTED' ? prior?.exemptReason : undefined,
+        };
+      });
 
       const criticalPaths: string[][] = impacted
         .filter((a: any) => a.isCriticalPath && Array.isArray(a.pathAssetIds) && a.pathAssetIds.length > 1)

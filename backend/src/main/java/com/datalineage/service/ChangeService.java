@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Change event governance service.
@@ -168,29 +170,52 @@ public class ChangeService {
 
     /**
      * Submit impact acknowledgment for an affected object.
+     * Upserts on (changeId, objectId) and closes the change only when every object
+     * in the current downstream impact set carries a final acknowledgement status.
      */
     @Transactional
     public ImpactAckEntity acknowledgeImpact(ImpactAckEntity ack) {
-        getChange(ack.getChangeId());
+        ChangeEventEntity change = getChange(ack.getChangeId());
         if (ack.getAckStatus() == null) {
             ack.setAckStatus("ACKED");
         }
         if ("ACKED".equals(ack.getAckStatus()) || "REJECTED".equals(ack.getAckStatus())) {
-            ack.setAckedAt(java.time.LocalDateTime.now());
+            ack.setAckedAt(LocalDateTime.now());
         }
-        impactAckMapper.insert(ack);
 
-        // Auto-resolve change when all acks are done
-        List<ImpactAckEntity> acks = impactAckMapper.findByChangeId(ack.getChangeId());
-        boolean allResolved = acks.stream().allMatch(a ->
-                "ACKED".equals(a.getAckStatus()) || "REJECTED".equals(a.getAckStatus())
-                        || "EXEMPTED".equals(a.getAckStatus()));
-        if (allResolved) {
-            updateStatus(ack.getChangeId(), "RESOLVED", null);
+        // Re-acknowledging the same affected object updates its record instead of
+        // duplicating it, so later simulations re-read a single coherent status.
+        ImpactAckEntity existing = impactAckMapper.findByChangeId(ack.getChangeId()).stream()
+                .filter(a -> a.getObjectId() != null && a.getObjectId().equals(ack.getObjectId()))
+                .reduce((first, second) -> second)
+                .orElse(null);
+        if (existing != null) {
+            ack.setId(existing.getId());
+            impactAckMapper.updateById(ack);
         } else {
-            updateStatus(ack.getChangeId(), "ACK_PENDING", null);
+            impactAckMapper.insert(ack);
         }
+
+        // The change is resolved only when ALL currently impacted downstream objects
+        // are finalized — matching just the rows inserted so far would close the
+        // change after the very first acknowledgment.
+        Set<String> finalized = impactAckMapper.findByChangeId(ack.getChangeId()).stream()
+                .filter(a -> a.getObjectId() != null && isFinalAckStatus(a.getAckStatus()))
+                .map(ImpactAckEntity::getObjectId)
+                .collect(Collectors.toSet());
+        Map<String, Object> impact = impactAnalysisService.analyzeImpact(change.getAssetId());
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> impacted =
+                (List<Map<String, Object>>) impact.getOrDefault("impactedAssets", List.of());
+        boolean allResolved = impacted.stream()
+                .map(a -> String.valueOf(a.get("assetId")))
+                .allMatch(finalized::contains);
+        updateStatus(ack.getChangeId(), allResolved ? "RESOLVED" : "ACK_PENDING", null);
         return ack;
+    }
+
+    private boolean isFinalAckStatus(String status) {
+        return "ACKED".equals(status) || "REJECTED".equals(status) || "EXEMPTED".equals(status);
     }
 
     @Transactional

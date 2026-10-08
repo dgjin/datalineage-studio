@@ -1,0 +1,12 @@
+PASS - 0.1 navigated to M3
+PASS - A.1 departments re-sim shows confirmed badges | confirmed=2
+PASS - A.2 departments re-sim shows NO pending badge | pending=0
+PASS - A.3 departments re-sim offers NO ack buttons (loop closed) | btns=0
+PASS - B.1 fresh scenario shows pending objects | pending=2
+PASS - B.2 ack buttons available for pending objects | btns=2
+B.3 acked 2 object(s)
+PASS - B.4 all objects confirmed after ack actions | pending=0
+PASS - B.5 RE-RUN simulation keeps confirmations (no reset to pending) | pending=0, confirmed=2
+cleanup: deleted change 3e7237ae
+PASS - C.1 test changes cleaned up | left=0
+==== 9/9 PASSED ====

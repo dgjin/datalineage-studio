@@ -64,6 +64,12 @@ public class ImpactController {
         return ApiResponse.success(report);
     }
 
+    @GetMapping("/acks")
+    @Operation(summary = "查询变更事件的影响确认记录")
+    public ApiResponse<List<ImpactAckEntity>> listAcks(@RequestParam String changeId) {
+        return ApiResponse.success(changeService.getAcks(changeId));
+    }
+
     @PostMapping("/acks")
     @Operation(summary = "提交影响确认")
     public ApiResponse<ImpactAckEntity> acknowledge(@RequestBody ImpactAckEntity ack) {
