@@ -143,6 +143,22 @@ public class ChangeService {
         return changeEventMapper.selectById(id);
     }
 
+    /**
+     * Mark a change event as managed after a contract backfill: flips is_managed
+     * so the drift moves out of the unmanaged queue, keeping the original status
+     * and impact trail intact (actor is recorded for audit).
+     */
+    @Transactional
+    public ChangeEventEntity markManaged(String id, String actor) {
+        ChangeEventEntity change = getChange(id);
+        change.setIsManaged(true);
+        if (actor != null) {
+            change.setActor(actor);
+        }
+        changeEventMapper.updateById(change);
+        return changeEventMapper.selectById(id);
+    }
+
     @Transactional
     public void deleteChange(String id) {
         getChange(id);

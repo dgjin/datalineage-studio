@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   LifeBuoy,
   Compass,
@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { NavTab } from '../Sidebar';
 import { MODULE_MANUAL } from '../../data/moduleManual';
+import { InitWizard } from './InitWizard';
 
 type HelpRole = 'USER' | 'ADMIN';
 
@@ -371,6 +372,19 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
   const [highlightSeq, setHighlightSeq] = useState<number | null>(null);
   const detailRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+  // ---- Wizard view: the initialization wizard is hosted inside the help module ----
+  const [view, setView] = useState<'manual' | 'wizard'>('manual');
+
+  // Command palette deep-link: auto-open the wizard when the flag was set before navigating here.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('dl_help_open_wizard') === '1') {
+        localStorage.removeItem('dl_help_open_wizard');
+        setView('wizard');
+      }
+    } catch { /* storage unavailable */ }
+  }, []);
+
   const steps = role === 'USER' ? USER_FLOW : ADMIN_FLOW;
   const rows = chunkRows(steps, 3);
 
@@ -404,6 +418,28 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
     setTimeout(() => manualRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
   };
   const manualFeatureTotal = MODULE_MANUAL.reduce((n, m) => n + m.features.length, 0);
+
+  // ---- Wizard view (replaces the manual when open) ----
+  if (view === 'wizard') {
+    return (
+      <div className="flex-1 flex flex-col overflow-hidden bg-slate-950">
+        <div className="flex items-center justify-between gap-3 px-5 py-2.5 border-b border-slate-800 bg-slate-900/60 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <Rocket className="w-4 h-4 text-sky-400 shrink-0" />
+            <span className="text-xs font-bold text-slate-100 shrink-0">初始化向导</span>
+            <span className="text-[10px] text-slate-400 truncate">三阶段引导：环境启动 → 数据接入与血缘 → 治理验证</span>
+          </div>
+          <button
+            onClick={() => setView('manual')}
+            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-800/70 text-slate-300 border border-slate-700 hover:bg-slate-800 transition shrink-0"
+          >
+            ← 返回帮助中心
+          </button>
+        </div>
+        <InitWizard />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto bg-slate-950 p-6 space-y-6">
@@ -458,6 +494,14 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
               <ClipboardList className="w-3.5 h-3.5" />
               <span>全模块傻瓜手册</span>
               <ArrowDown className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => setView('wizard')}
+              className="px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition border bg-sky-500/15 text-sky-300 border-sky-500/40 hover:bg-sky-500/25"
+            >
+              <Rocket className="w-3.5 h-3.5" />
+              <span>初始化向导</span>
+              <span className="text-[10px] opacity-70">三阶段上手</span>
             </button>
           </div>
         </div>
@@ -763,10 +807,14 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onNavigateTab }) => {
 
                     <div className="flex justify-end">
                       <button
-                        onClick={() => onNavigateTab(m.tab)}
+                        onClick={() => {
+                          // The wizard is hosted inside this help module — open it in place.
+                          if (m.id === 'wizard') { setView('wizard'); return; }
+                          onNavigateTab(m.tab);
+                        }}
                         className="text-[11px] px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 transition flex items-center gap-1"
                       >
-                        <span>前往模块实操</span>
+                        <span>{m.id === 'wizard' ? '打开向导' : '前往模块实操'}</span>
                         <ArrowRight className="w-3 h-3" />
                       </button>
                     </div>

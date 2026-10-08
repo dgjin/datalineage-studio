@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ChangeEvent } from '../../types/lineage';
-import { approvalApi } from '../../services/api';
+import { approvalApi, assetApi, changeApi, contractApi } from '../../services/api';
 import { useLineageStore } from '../../stores/lineageStore';
 import { 
   Activity, 
@@ -40,6 +40,11 @@ export const M4ChangeCenter: React.FC<M4ChangeCenterProps> = ({
   const [copiedReleaseNote, setCopiedReleaseNote] = useState(false);
   const [approvalRecords, setApprovalRecords] = useState<any[]>([]);
   const [approvalBusy, setApprovalBusy] = useState(false);
+  const [patchColumns, setPatchColumns] = useState<{ name: string; type: string }[]>([]);
+  const [patchColumnsLoading, setPatchColumnsLoading] = useState(false);
+  const [backfillBusy, setBackfillBusy] = useState(false);
+  const [backfillError, setBackfillError] = useState<string | null>(null);
+  const [backfillResult, setBackfillResult] = useState<{ contractPath: string } | null>(null);
 
   const selectedChange = changes.find(c => c.id === selectedChangeId) || changes[0];
 
@@ -84,26 +89,81 @@ export const M4ChangeCenter: React.FC<M4ChangeCenterProps> = ({
     }
   }, [selectedChange]);
 
-  // Contract patch is generated from the selected change's own records — the raw
+  // Contract backfill is generated from the selected change's own records — the raw
   // DDL diff (when present) is embedded as a YAML block, never hardcoded columns.
   const patchRawDiff = selectedChange?.details?.rawDiff;
   const patchDiffBlock = patchRawDiff
     ? `diff: |\n${patchRawDiff.split('\n').map((l: string) => `  ${l}`).join('\n')}`
     : '# 本次变更未携带原始 DDL 差异，请从生产库反向比对后补录';
-  const generatedContractPatch = `# =========================================================
-# 由 DataLineage Studio 针对生产暗改自动反向生成的契约补丁
-# 资产: ${selectedChange?.assetName}
+
+  // Real columns of the target asset are fetched when the modal opens so the
+  // backfilled contract is a schema-accurate snapshot of the current state.
+  useEffect(() => {
+    if (!contractPatchModalOpen || !selectedChange?.assetId) {
+      setPatchColumns([]);
+      return;
+    }
+    let cancelled = false;
+    setPatchColumnsLoading(true);
+    assetApi.getColumns(selectedChange.assetId)
+      .then(cols => {
+        if (!cancelled) setPatchColumns((cols || []).map((c: any) => ({ name: c.name, type: c.type })));
+      })
+      .catch(() => { if (!cancelled) setPatchColumns([]); })
+      .finally(() => { if (!cancelled) setPatchColumnsLoading(false); });
+    return () => { cancelled = true; };
+  }, [contractPatchModalOpen, selectedChange?.assetId]);
+
+  // Deterministic, collision-free contract path: asset slug + change-id suffix.
+  const backfillSlug = (selectedChange?.assetName || 'asset').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'asset';
+  const backfillSuffix = (selectedChange?.id || '').replace(/[^A-Za-z0-9]/g, '').slice(-10);
+  const backfillPath = `contracts/backfill/${backfillSlug}_${backfillSuffix || 'change'}.yml`;
+
+  const backfillColumnsBlock = patchColumns.length > 0
+    ? `columns:\n${patchColumns.map(c => `  - name: ${c.name}\n    type: ${c.type}`).join('\n')}`
+    : 'columns: []';
+
+  const backfillYaml = `# =========================================================
+# 反向补录契约（由 DataLineage Studio 自动生成，来源：生产暗改纳管）
+# 资产: ${selectedChange?.assetName} | 变更: ${selectedChange?.changeType}
 # 检测来源: ${selectedChange?.detectedBy} | 时间: ${selectedChange?.timestamp}
+# 变更单: ${selectedChange?.id}
 # =========================================================
-schemaVersion: 2.0
+domain: 反向补录
+version: "2.0"
 dataset: ${selectedChange?.assetName}
-status: PENDING_REVIEW
+assetId: ${selectedChange?.assetId}
+status: IN_REVIEW
 managedBy: GitOps
+backfillFrom: ${selectedChange?.id}
+${backfillColumnsBlock}
+auditNote: 以补录时刻的采集 schema 为基线，经架构师评审后生效；原始 DDL 差异见下方 diff 段。
+${patchDiffBlock}`;
 
-# 差异合并补丁（取自本次变更记录的原始 DDL 差异）
-${patchDiffBlock}
-
-auditNote: 反向补录请提交 Merge Request，经架构师代码审查后合并。`;
+  // Real backfill: register the contract (visible in M6) and mark the drift
+  // change as managed (it leaves the unmanaged queue) — both persisted.
+  const submitContractBackfill = async () => {
+    if (!selectedChange) return;
+    setBackfillBusy(true);
+    setBackfillError(null);
+    try {
+      const created = await contractApi.create({
+        path: backfillPath,
+        domain: '反向补录',
+        version: '2.0',
+        author: '数据治理组',
+        status: 'IN_REVIEW',
+        yamlContent: backfillYaml,
+      });
+      await changeApi.markManaged(selectedChange.id, '数据治理组');
+      await useLineageStore.getState().fetchChanges();
+      setBackfillResult({ contractPath: created?.path ?? backfillPath });
+    } catch (e: any) {
+      setBackfillError(e?.message || '补录失败，请稍后重试');
+    } finally {
+      setBackfillBusy(false);
+    }
+  };
 
   // Release note is generated from the currently selected real change event —
   // never from hardcoded demo text referencing unrelated assets.
@@ -296,11 +356,15 @@ ${selectedChange?.details?.rawDiff ?? '（该变更未携带原始 DDL 差异记
             <div className="flex items-center gap-2">
               {!selectedChange.isManaged ? (
                 <button
-                  onClick={() => setContractPatchModalOpen(true)}
+                  onClick={() => {
+                    setBackfillResult(null);
+                    setBackfillError(null);
+                    setContractPatchModalOpen(true);
+                  }}
                   className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-semibold text-xs transition shadow-lg shadow-rose-500/20 flex items-center gap-1.5"
                 >
                   <FileCode className="w-4 h-4" />
-                  <span>一键补录契约并创建 MR</span>
+                  <span>一键补录契约并纳入受控管理</span>
                 </button>
               ) : (
                 <button
@@ -452,54 +516,87 @@ ${selectedChange?.details?.rawDiff ?? '（该变更未携带原始 DDL 差异记
           <div className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-5 space-y-4 text-xs">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
-                <h3 className="font-bold text-slate-100 text-sm">反向生成 Git 契约补丁 (Reverse Contract Patch)</h3>
-                <p className="text-slate-400 text-[11px] mt-0.5">将生产已发生的暗改结构自动格式化为契约 YAML，纠正断链</p>
+                <h3 className="font-bold text-slate-100 text-sm">反向补录契约 (Reverse Contract Backfill)</h3>
+                <p className="text-slate-400 text-[11px] mt-0.5">以当前采集 schema 为基线生成契约，提交后注册至契约库并纳入受控管理</p>
               </div>
               <button onClick={() => setContractPatchModalOpen(false)} className="text-slate-400 hover:text-slate-100">✕</button>
             </div>
 
             <div className="space-y-1">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-slate-300 font-semibold">生成的目标 YAML 规范:</span>
+                <span className="text-slate-300 font-semibold">
+                  将要注册的契约内容 (YAML)
+                  {patchColumnsLoading && <span className="text-slate-500 ml-2">正在读取资产字段快照…</span>}
+                </span>
                 <button
                   onClick={() => {
-                    navigator.clipboard?.writeText(generatedContractPatch);
+                    navigator.clipboard?.writeText(backfillYaml);
                     setCopiedPatch(true);
                     setTimeout(() => setCopiedPatch(false), 2000);
                   }}
                   className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
                 >
                   <Copy className="w-3 h-3" />
-                  <span>{copiedPatch ? '已复制' : '复制补丁'}</span>
+                  <span>{copiedPatch ? '已复制' : '复制 YAML'}</span>
                 </button>
               </div>
               <pre className="p-3 bg-slate-950 rounded-lg text-emerald-300 font-mono text-xs overflow-x-auto border border-slate-800 max-h-60 leading-relaxed">
-                {generatedContractPatch}
+                {backfillYaml}
               </pre>
             </div>
 
             <div className="flex items-center justify-between pt-3 border-t border-slate-800">
-              <span className="text-[11px] text-slate-400">
-                点击将调用 Gitea/GitLab API 自动创建分支与 Pull Request
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setContractPatchModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700"
-                >
-                  关闭
-                </button>
-                <button
-                  onClick={() => {
-                    alert('已成功创建 Git 契约补丁 MR !135，并自动指派架构师审批！');
-                    setContractPatchModalOpen(false);
-                  }}
-                  className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold flex items-center gap-1.5"
-                >
-                  <GitPullRequest className="w-4 h-4" />
-                  <span>立即提交 MR 纳入受控管理</span>
-                </button>
-              </div>
+              {backfillResult ? (
+                <>
+                  <span className="text-[11px] text-emerald-300 flex items-center gap-1.5 min-w-0">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">补录完成：契约已注册（{backfillResult.contractPath}），变更已纳入受控管理</span>
+                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => { setContractPatchModalOpen(false); onNavigateContract(backfillResult.contractPath); }}
+                      className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold flex items-center gap-1.5"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5" />
+                      <span>前往 M6 查看契约</span>
+                    </button>
+                    <button
+                      onClick={() => setContractPatchModalOpen(false)}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    >
+                      关闭
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="text-[11px] text-slate-400 min-w-0">
+                    {backfillError ? (
+                      <span className="text-rose-300">补录失败：{backfillError}</span>
+                    ) : patchColumnsLoading ? (
+                      '正在读取资产字段快照…'
+                    ) : (
+                      '提交后将注册契约至契约库（M6 可查看），并把该变更标记为受控纳管'
+                    )}
+                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => setContractPatchModalOpen(false)}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    >
+                      关闭
+                    </button>
+                    <button
+                      onClick={submitContractBackfill}
+                      disabled={backfillBusy}
+                      className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold flex items-center gap-1.5"
+                    >
+                      <GitPullRequest className="w-4 h-4" />
+                      <span>{backfillBusy ? '提交补录中…' : backfillError ? '重试补录' : '提交补录并纳入受控管理'}</span>
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

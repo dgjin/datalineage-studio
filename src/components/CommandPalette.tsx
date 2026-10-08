@@ -120,11 +120,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   <span>178 项核心指标库 (M5)</span>
                 </button>
                 <button
-                  onClick={() => { onNavigateTab('wizard'); onClose(); }}
+                  onClick={() => {
+                    try { localStorage.setItem('dl_help_open_wizard', '1'); } catch { /* ignore */ }
+                    onNavigateTab('help');
+                    onClose();
+                  }}
                   className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-sky-300 transition text-left"
                 >
                   <Rocket className="w-4 h-4 text-sky-400" />
-                  <span>系统初始化向导 · 三阶段上手</span>
+                  <span>系统初始化向导 · 三阶段上手（帮助中心内打开）</span>
                 </button>
                 <button
                   onClick={() => { onNavigateTab('help'); onClose(); }}

@@ -241,6 +241,13 @@ export const changeApi = {
     body: JSON.stringify(change),
   }),
 
+  // Contract backfill: mark an unmanaged drift change as managed (after the
+  // backfilled contract has been registered), so it leaves the unmanaged queue.
+  markManaged: (id: string, actor?: string) =>
+    apiFetch<any>(`/changes/${encodeURIComponent(id)}/manage${actor ? `?actor=${encodeURIComponent(actor)}` : ''}`, {
+      method: 'POST',
+    }),
+
   listAcks: (changeId: string) => apiFetch<any[]>(`/changes/${changeId}/acks`),
   
   simulate: (params: { assetId: string; changeType: string; column?: string }) =>

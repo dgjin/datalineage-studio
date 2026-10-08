@@ -14,7 +14,6 @@ import {
   Server,
   BookOpen,
   LifeBuoy,
-  Rocket,
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react';
@@ -35,7 +34,6 @@ export type NavTab =
   | 'datasources'
   | 'standards'
   | 'models'
-  | 'wizard'
   | 'help';
 
 interface SidebarProps {
@@ -111,7 +109,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const mainNav: NavItem[] = [
     { id: 'workbench', label: '工作台', icon: Home, badge: null },
-    { id: 'wizard', label: '初始化向导', icon: Rocket, badge: '上手', badgeColor: 'bg-sky-500/20 text-sky-300 border-sky-500/30' },
     { id: 'catalog', label: 'M1 资产目录', icon: Database, badge: null },
     { id: 'lineage', label: 'M2 血缘探索器', icon: GitFork, badge: '核心' },
     { id: 'impact', label: 'M3 影响分析', icon: AlertOctagon, badge: pendingAckCount > 0 ? `${pendingAckCount}待确认` : null, badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30', dotColor: 'bg-amber-400' },

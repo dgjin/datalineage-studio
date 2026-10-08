@@ -21,7 +21,6 @@ import { M11DataSourceManager } from './components/modules/M11DataSourceManager'
 import { M12StandardsHub } from './components/modules/M12StandardsHub';
 import { M13DataModelHub } from './components/modules/M13DataModelHub';
 import { HelpCenter } from './components/modules/HelpCenter';
-import { InitWizard } from './components/modules/InitWizard';
 
 // Mock initial data
 import {
@@ -257,6 +256,8 @@ function AppShell() {
   const handleNavigateContract = (ref?: string) => {
     if (ref) setContractRef(ref);
     setActiveTab('contracts');
+    // Pull the latest contract list so a freshly backfilled contract is visible in M6.
+    refreshContracts();
   };
 
   const handleNotificationAction = (notif: any, action: string) => {
@@ -340,10 +341,6 @@ function AppShell() {
               }}
               onSimulateChange={handleSimulateChange}
             />
-          )}
-
-          {activeTab === 'wizard' && (
-            <InitWizard />
           )}
 
           {activeTab === 'catalog' && (

@@ -56,6 +56,13 @@ public class ChangeController {
         return ApiResponse.success(changeService.updateStatus(id, status, actor), "Status updated");
     }
 
+    @PostMapping("/{id}/manage")
+    @Operation(summary = "契约补录后将变更纳入受控管理")
+    public ApiResponse<ChangeEventEntity> markManaged(@PathVariable String id,
+                                                       @RequestParam(required = false) String actor) {
+        return ApiResponse.success(changeService.markManaged(id, actor), "Change backfilled and managed");
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "删除变更事件")
     public ApiResponse<Void> deleteChange(@PathVariable String id) {
