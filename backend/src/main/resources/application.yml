@@ -106,6 +106,15 @@ datalineage:
   frontend:
     allowed-origins: http://localhost:3000,http://127.0.0.1:3000
 
+# AIOps 自动运维智能体集成（需求反馈标准导出 / 处理进度回查）
+aiops:
+  # 需求基线导出接口（/requirements/export）服务令牌；空 = 仅 ADMIN JWT 通道（fail-safe）
+  ops-api-token: ${OPS_API_TOKEN:}
+  # 「我的反馈」处理进度回查（AIOps 只读 track 接口）；未配置时前端隐藏进度区
+  track-url: ${AIOPS_TRACK_URL:}
+  track-token: ${AIOPS_TRACK_TOKEN:}
+  track-app-id: ${AIOPS_TRACK_APP_ID:datalineage-studio}
+
 # Logging
 # File logging feeds the AIOps monitored-app standard interface (the log_path
 # declared in public/.well-known/aiops.json) - keep both paths in sync.

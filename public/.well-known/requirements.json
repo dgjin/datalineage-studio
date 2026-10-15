@@ -1,0 +1,43 @@
+{
+  "spec_version": "1.0",
+  "service": "datalineage-studio",
+  "name": "DataLineage Studio 数据血缘治理平台",
+  "title": "需求收集与反馈基线标准接口",
+  "description": "用户提交需求/意见 → 管理员评估分析 → 纳入基线管理；已纳入基线的条目经导出端点提供给 AIOps 平台主动分析。",
+  "export_path": "/api/requirements/export",
+  "auth": {
+    "type": "bearer",
+    "env": "OPS_API_TOKEN",
+    "header": "Authorization: Bearer <OPS_API_TOKEN>",
+    "note": "OPS_API_TOKEN 未配置时该端点仅接受 ADMIN JWT（管理面板复用同端点）。"
+  },
+  "query": {
+    "status": "BASELINED（默认）| PENDING | REJECTED | ALL",
+    "kind": "REQUIREMENT | SUGGESTION | BUG | OTHER（可选过滤）",
+    "since": "增量游标：按 updated_at >= since 过滤，格式 YYYY-MM-DD[ HH:MM[:SS]]",
+    "limit": "1-500，默认 200"
+  },
+  "status_flow": {
+    "PENDING": "待评估（用户已提交，等待管理员评估分析）",
+    "BASELINED": "已纳入基线（附 priority / baselineVersion / assessment）",
+    "REJECTED": "不予采纳（附 assessment 说明）"
+  },
+  "review_note": "评估完成后仍可继续评估（二次及以后）：主表只存最新结论，每次评估均追加 revisions 记录。",
+  "entry_fields": {
+    "id": "string 条目编号（UUID）",
+    "kind": "REQUIREMENT | SUGGESTION | BUG | OTHER",
+    "title": "string 标题",
+    "content": "string 内容描述",
+    "status": "PENDING | BASELINED | REJECTED",
+    "priority": "P0 | P1 | P2 | P3（仅纳入基线后有值）",
+    "baselineVersion": "string 基线版本（可空）",
+    "assessment": "string 管理员评估分析意见",
+    "submitter": "string 提交人",
+    "department": "string 部门（当前系统无部门维度，固定空串）",
+    "reviewer": "string 评估人",
+    "reviewedAt": "ISO8601 | null 评估时间",
+    "createdAt": "ISO8601 提交时间",
+    "updatedAt": "ISO8601 最近变更时间（增量拉取依据）",
+    "revisions": "评估历史数组（评估先后升序，每条目至多20条）：每次评估（含继续评估）的 action / priority / baselineVersion / assessment / reviewer / createdAt——继续评估产生的新内容经此获取"
+  }
+}

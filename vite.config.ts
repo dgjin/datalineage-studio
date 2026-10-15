@@ -60,6 +60,13 @@ export default defineConfig(() => {
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
       // Proxy API requests to Spring Boot backend
       proxy: {
+        // AIOps 需求反馈标准路径：/api/requirements/* → 后端 /api/v1/requirements/*
+        // （必须声明在通用 '/api' 之前，否则会被其吞掉）
+        '/api/requirements': {
+          target: 'http://localhost:8080',
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/api\/requirements/, '/api/v1/requirements'),
+        },
         '/api': {
           target: 'http://localhost:8080',
           changeOrigin: true,

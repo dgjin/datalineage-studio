@@ -20,6 +20,7 @@ import { M10CollectorAdmin } from './components/modules/M10CollectorAdmin';
 import { M11DataSourceManager } from './components/modules/M11DataSourceManager';
 import { M12StandardsHub } from './components/modules/M12StandardsHub';
 import { M13DataModelHub } from './components/modules/M13DataModelHub';
+import { M14RequirementFeedback } from './components/modules/M14RequirementFeedback';
 import { HelpCenter } from './components/modules/HelpCenter';
 
 // Mock initial data
@@ -444,6 +445,10 @@ function AppShell() {
 
           {activeTab === 'models' && (
             <M13DataModelHub />
+          )}
+
+          {activeTab === 'feedback' && (
+            <M14RequirementFeedback />
           )}
 
           {activeTab === 'help' && (

@@ -1,6 +1,7 @@
 package com.datalineage.config;
 
 import com.datalineage.security.JwtAuthFilter;
+import com.datalineage.security.OpsTokenAuthFilter;
 import com.datalineage.security.RestAccessDeniedHandler;
 import com.datalineage.security.RestAuthEntryPoint;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +24,12 @@ import java.util.Arrays;
 
 /**
  * Stateless JWT security with three-role RBAC:
- * - GET endpoints stay public so read-only browsing works without a session.
+ * - GET endpoints stay public so read-only browsing works without a session,
+ *   except the requirement-feedback management views and /requirements/export.
  * - Write endpoints (POST/PUT/DELETE) require an ADMIN or GOVERNOR bearer token;
  *   a VIEWER token is authenticated but denied (403).
+ * - Requirement feedback: submission and own-list endpoints are open to any
+ *   authenticated user; management views / review / delete are ADMIN-only.
  * - /auth/login, actuator and swagger stay public.
  */
 @Configuration
@@ -34,6 +38,7 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final OpsTokenAuthFilter opsTokenAuthFilter;
     private final RestAuthEntryPoint authEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
 
@@ -48,11 +53,20 @@ public class SecurityConfig {
                 .requestMatchers("/auth/login", "/actuator/**", "/swagger-ui/**",
                         "/swagger-ui.html", "/v3/api-docs/**", "/error").permitAll()
                 .requestMatchers("/auth/me").authenticated()
+                // 需求反馈：提交 / 我的视图对全部登录用户开放；管理视图与决策仅 ADMIN；
+                // 导出接口另接受服务令牌通道（OpsTokenAuthFilter 注入 ADMIN 身份）
+                .requestMatchers(HttpMethod.GET, "/requirements/export").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/requirements/mine", "/requirements/ops-progress").authenticated()
+                .requestMatchers(HttpMethod.GET, "/requirements", "/requirements/summary").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/requirements").authenticated()
+                .requestMatchers(HttpMethod.POST, "/requirements/*/review").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/requirements/*").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/**").permitAll()
                 .anyRequest().hasAnyRole("ADMIN", "GOVERNOR"))
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint(authEntryPoint)
                 .accessDeniedHandler(accessDeniedHandler))
+            .addFilterBefore(opsTokenAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

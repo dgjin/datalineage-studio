@@ -2,6 +2,7 @@
  * DataLineage Studio API Service Layer
  * Replaces mock data with real backend API calls
  */
+import type { FeedbackEntry, OpsProgressResponse } from '../types/requirements';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
@@ -650,6 +651,52 @@ export const webhookApi = {
   }),
 };
 
+// Requirement feedback API (M14: collection -> baseline review -> AIOps standard export)
+export const requirementApi = {
+  submit: (payload: { kind: string; title: string; content: string; priority?: string }) =>
+    apiFetch<{ id: string }>('/requirements', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  mine: () => apiFetch<FeedbackEntry[]>('/requirements/mine'),
+
+  // AIOps processing progress proxy (hidden by the UI when the integration is unconfigured)
+  opsProgress: (ids: string[]) =>
+    apiFetch<OpsProgressResponse>(`/requirements/ops-progress?ids=${encodeURIComponent(ids.join(','))}`),
+
+  adminList: (params?: { status?: string; kind?: string }) => {
+    const query = new URLSearchParams(
+      Object.entries(params || {}).reduce((acc, [k, v]) => {
+        if (v) (acc as Record<string, string>)[k] = v;
+        return acc;
+      }, {} as Record<string, string>)
+    ).toString();
+    return apiFetch<FeedbackEntry[]>(`/requirements${query ? `?${query}` : ''}`);
+  },
+
+  summary: () =>
+    apiFetch<{
+      byStatus: { status: string; cnt: number }[];
+      byKind: { kind: string; cnt: number }[];
+      byPriority: { priority: string; cnt: number }[];
+    }>('/requirements/summary'),
+
+  review: (
+    id: string,
+    payload: { action: string; priority?: string; baselineVersion?: string; assessment?: string }
+  ) =>
+    apiFetch<{ id: string; status: string }>(`/requirements/${encodeURIComponent(id)}/review`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  remove: (id: string) =>
+    apiFetch<void>(`/requirements/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }),
+};
+
 export default {
   auth: authApi,
   asset: assetApi,
@@ -668,4 +715,5 @@ export default {
   model: modelApi,
   audit: auditApi,
   webhook: webhookApi,
+  requirement: requirementApi,
 };

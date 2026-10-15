@@ -1,6 +1,6 @@
 # DataLineage Studio — 通用数据血缘与变更治理平台
 
-以血缘图谱为核心、变更事件为驱动、契约与校验为质量底线的企业级通用数据资产管理应用。前端 13 个模块（M1–M13）+ Spring Boot 后端 + MySQL，内置双时态血缘、全链路审计、变更 Webhook、数据标准落标与高可用部署。
+以血缘图谱为核心、变更事件为驱动、契约与校验为质量底线的企业级通用数据资产管理应用。前端 14 个模块（M1–M14）+ Spring Boot 后端 + MySQL，内置双时态血缘、全链路审计、变更 Webhook、数据标准落标与高可用部署。
 
 ## 快速开始（本地开发）
 
@@ -62,6 +62,7 @@ npx vite --port 5173        # 或 npm run dev（:3000）
 | 前端健壮性 | 全局 + 模块级 ErrorBoundary（单模块崩溃不白屏）；首同步骨架屏 |
 | M13 模型增强 | 支持 ERMaster `.erm` 与 PowerDesigner `.pdm`；同名重导自动升版（v1/v2…）；版本回放与对比；差异导出 markdown/csv |
 | 模型维护 | 已导入模型可重命名 / 改目标分层、状态、对比数据源 / 整体删除（`PUT /models/{id}` · `DELETE /models/{id}`，连带表结构快照与版本历史，同级名称冲突拦截，写操作自动审计） |
+| M14 需求反馈 | 需求收集与意见反馈闭环（移植自「智能问数据分析系统」）：用户提交 → 管理员评估分析（纳入基线 / 不予采纳 / 退回待评估，每次评估留痕）→ 基线条目经标准导出接口（`GET /api/requirements/export`，契约 v1.0）供 AIOps 主动分析；已纳入基线条目展示 AIOps 处理进度（阶段徽标 + 时间线） |
 | 高可用部署 | 双后端实例 + nginx 网关（故障转移），共享 JWT 无状态；多架构镜像（amd64/arm64） |
 
 ## Docker 部署
@@ -148,6 +149,7 @@ node scripts/demo-mode-check.mjs        # Demo 数据一键切换闭环（默认
 | 健康判据 | `/` + 关键字 `<div id="root"` | 探测/巡检校验 SPA 挂载点（白屏判据），兼作修复后金丝雀验证契约 |
 | 指标 | `/api/v1/actuator/prometheus` | 经网关（Vite / nginx）代理到后端 |
 | 日志 | `backend/logs/datalineage-backend.log` | 后端文件日志（`DATALINEAGE_LOG_FILE` 可覆盖路径）；AIOps 采集器据此推送 Loki |
+| 需求反馈 | `GET /api/requirements/export` | 需求基线标准导出（契约 v1.0）；能力自描述 `GET /.well-known/requirements.json`；服务令牌 `OPS_API_TOKEN` 与 ADMIN JWT 双通道（未配置令牌时仅 JWT）；边缘映射到后端 `/api/v1/requirements/export`（Vite dev 代理重写 / nginx location 重写） |
 
 接入前体检（在 AIOps 仓库执行；`:5173` 为本仓库验证脚本的默认前端端口）：
 

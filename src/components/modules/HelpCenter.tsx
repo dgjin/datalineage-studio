@@ -108,6 +108,7 @@ const MANUAL_ICONS: Record<string, React.ElementType> = {
   server: Server,
   book: BookOpen,
   lifebuoy: LifeBuoy,
+  lightbulb: Lightbulb,
 };
 
 interface FlowStep {

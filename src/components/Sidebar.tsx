@@ -14,6 +14,7 @@ import {
   Server,
   BookOpen,
   LifeBuoy,
+  Lightbulb,
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react';
@@ -35,6 +36,7 @@ export type NavTab =
   | 'datasources'
   | 'standards'
   | 'models'
+  | 'feedback'
   | 'help';
 
 interface SidebarProps {
@@ -123,6 +125,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'datasources', label: 'M11 数据源接入', icon: Server, badge: 'New', badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' },
     { id: 'standards', label: 'M12 标准中枢', icon: BookOpen, badge: 'New', badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' },
     { id: 'models', label: 'M13 数据模型', icon: Database, badge: 'New', badgeColor: 'bg-violet-500/20 text-violet-300 border-violet-500/30' },
+    { id: 'feedback', label: 'M14 需求反馈', icon: Lightbulb, badge: 'New', badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
     { id: 'help', label: '帮助中心', icon: LifeBuoy, badge: '指南', badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
   ];
 

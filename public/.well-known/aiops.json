@@ -6,6 +6,7 @@
   "health_path": "/",
   "metrics_path": "/api/v1/actuator/prometheus",
   "log_path": "/Users/dgjin/dgjinapp/datalineage-studio/backend/logs/datalineage-backend.log",
+  "requirements_path": "/api/requirements/export",
   "protected_paths": [
     "backend/src/main/java/com/datalineage/security/**",
     "backend/src/main/java/com/datalineage/controller/AuthController.java",
