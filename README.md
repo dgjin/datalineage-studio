@@ -136,3 +136,24 @@ node scripts/demo-mode-check.mjs        # Demo 数据一键切换闭环（默认
 
 - 健康：`GET /api/v1/actuator/health`
 - 指标：`GET /api/v1/actuator/prometheus`（关键：`datalineage_lineage_edges_total`、`datalineage_lineage_edges_expired_total`、`datalineage_webhook_deliveries_total`、`datalineage_collector_runs_total`、`datalineage_validation_open_issues`）
+
+### AIOps 标准接口（被监控接入）
+
+已按 AIOps Manifest v1.0 部署标准接口，可被「AIOps 自动运维智能体」控制台「从标准接口探测」一键纳管（探测巡检 → 日志采集 → 突增检测 → 代码索引 → 修复验证全链路自动适配）。规范见 AIOps 仓库《AIOps 被监控系统标准接口改造方案.md》。
+
+| 项 | 取值 | 说明 |
+| :--- | :--- | :--- |
+| Manifest | `GET /.well-known/aiops.json` | 静态文件 `public/.well-known/aiops.json`；Vite dev 直接托管，生产构建复制进 `dist/` 由 nginx 托管 |
+| service | `datalineage-studio` | 与告警 / Loki 日志标签一致 |
+| 健康判据 | `/` + 关键字 `<div id="root"` | 探测/巡检校验 SPA 挂载点（白屏判据），兼作修复后金丝雀验证契约 |
+| 指标 | `/api/v1/actuator/prometheus` | 经网关（Vite / nginx）代理到后端 |
+| 日志 | `backend/logs/datalineage-backend.log` | 后端文件日志（`DATALINEAGE_LOG_FILE` 可覆盖路径）；AIOps 采集器据此推送 Loki |
+
+接入前体检（在 AIOps 仓库执行；`:5173` 为本仓库验证脚本的默认前端端口）：
+
+```bash
+cd "/path/to/AIOps Agent/aiops-agent"
+.venv/bin/python check_aiops_interface.py --url http://localhost:5173 --extended
+```
+
+维护约定（「两份数据、一个事实来源」）：日志路径 / 端口 / 关键字如有调整，须同步更新 `public/.well-known/aiops.json`；Docker 部署时后端日志走容器 stdout（如需采集请在 AIOps 控制台按实际路径调整 log_path）。

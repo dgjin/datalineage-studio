@@ -16,6 +16,9 @@ RUN npm ci --no-audit --no-fund --legacy-peer-deps
 # Only the files vite build needs
 COPY index.html tsconfig.json vite.config.ts ./
 COPY src ./src
+# public/ carries root-served static assets (system-init-wizard.html and the
+# AIOps standard-interface manifest at .well-known/aiops.json)
+COPY public ./public
 
 RUN npm run build
 

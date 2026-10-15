@@ -107,9 +107,15 @@ datalineage:
     allowed-origins: http://localhost:3000,http://127.0.0.1:3000
 
 # Logging
+# File logging feeds the AIOps monitored-app standard interface (the log_path
+# declared in public/.well-known/aiops.json) - keep both paths in sync.
+# Path is relative to the backend working directory (backend/logs/).
 logging:
+  file:
+    name: ${DATALINEAGE_LOG_FILE:logs/datalineage-backend.log}
   level:
     com.datalineage: debug
     com.datalineage.mapper: debug
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

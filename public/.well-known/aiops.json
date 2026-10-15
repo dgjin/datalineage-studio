@@ -1,0 +1,15 @@
+{
+  "spec_version": "1.0",
+  "service": "datalineage-studio",
+  "name": "DataLineage Studio 数据血缘治理平台",
+  "probe_keyword": "<div id=\"root\"",
+  "health_path": "/",
+  "metrics_path": "/api/v1/actuator/prometheus",
+  "log_path": "/Users/dgjin/dgjinapp/datalineage-studio/backend/logs/datalineage-backend.log",
+  "protected_paths": [
+    "backend/src/main/java/com/datalineage/security/**",
+    "backend/src/main/java/com/datalineage/controller/AuthController.java",
+    "backend/src/main/resources/application.yml"
+  ],
+  "test_command": "mvn -f backend/pom.xml -q test && npm run lint"
+}
