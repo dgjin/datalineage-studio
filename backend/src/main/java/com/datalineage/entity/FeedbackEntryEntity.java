@@ -15,8 +15,9 @@ import java.time.LocalDateTime;
 @Data
 @TableName("feedback_entries")
 public class FeedbackEntryEntity {
-    @TableId(type = IdType.ASSIGN_UUID)
-    private String id;
+    /** 自然数自增编号（对齐源实现契约 id: 'number 条目编号'） */
+    @TableId(type = IdType.AUTO)
+    private Long id;
     private String kind;
     private String title;
     private String content;

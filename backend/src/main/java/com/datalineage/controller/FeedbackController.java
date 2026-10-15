@@ -77,7 +77,7 @@ public class FeedbackController {
     @PostMapping("/{id}/review")
     @AuditLog(action = "FEEDBACK_REVIEW", resourceType = "FEEDBACK", summary = "需求反馈评估分析")
     @Operation(summary = "评估分析：BASELINE 纳入基线 / REJECT 不予采纳 / PENDING 退回待评估")
-    public ApiResponse<Map<String, Object>> review(@PathVariable String id,
+    public ApiResponse<Map<String, Object>> review(@PathVariable Long id,
                                                    @RequestBody FeedbackReviewRequest request,
                                                    Authentication authentication) {
         return ApiResponse.success(feedbackService.review(id, request, authentication.getName()), "评估已记录");
@@ -86,7 +86,7 @@ public class FeedbackController {
     @DeleteMapping("/{id}")
     @AuditLog(action = "FEEDBACK_DELETE", resourceType = "FEEDBACK", summary = "删除需求反馈条目")
     @Operation(summary = "删除条目（评估历史随外键级联删除）")
-    public ApiResponse<Void> delete(@PathVariable String id) {
+    public ApiResponse<Void> delete(@PathVariable Long id) {
         feedbackService.delete(id);
         return ApiResponse.success(null, "条目已删除");
     }

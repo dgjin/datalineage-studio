@@ -74,14 +74,16 @@ public class FeedbackTrackService {
      * 拉取条目处理进度（带 20s 成功缓存）。
      * 返回 ok=false 时 error 为中文原因，调用方直接展示；绝不抛异常。
      */
-    public TrackResult fetch(List<String> entryIds) {
-        String cacheKey = entryIds.stream().sorted().collect(Collectors.joining(","));
+    public TrackResult fetch(List<Long> entryIds) {
+        String cacheKey = entryIds.stream().map(String::valueOf).sorted().collect(Collectors.joining(","));
         CacheEntry hit = cache.get(cacheKey);
         if (hit != null && System.currentTimeMillis() - hit.at < CACHE_TTL_MS) {
             return new TrackResult(true, "", hit.ops, true);
         }
         String url = trackUrl + "/api/requirements/track"
-                + "?entry_ids=" + URLEncoder.encode(String.join(",", entryIds), StandardCharsets.UTF_8)
+                + "?entry_ids=" + URLEncoder.encode(
+                        entryIds.stream().map(String::valueOf).collect(Collectors.joining(",")),
+                        StandardCharsets.UTF_8)
                 + "&app_id=" + URLEncoder.encode(appId, StandardCharsets.UTF_8);
         try {
             HttpRequest request = HttpRequest.newBuilder(URI.create(url))

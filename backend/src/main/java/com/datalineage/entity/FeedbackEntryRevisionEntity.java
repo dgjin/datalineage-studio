@@ -18,7 +18,7 @@ public class FeedbackEntryRevisionEntity {
     /** 自增主键：升序即评估先后（对齐源实现 ORDER BY id ASC） */
     @TableId(type = IdType.AUTO)
     private Long id;
-    private String entryId;
+    private Long entryId;
     private String action;
     private String priority;
     private String baselineVersion;

@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 public class FeedbackRevisionView {
     private Long id;
-    private String entryId;
+    private Long entryId;
     private String action;
     private String priority;
     private String baselineVersion;

@@ -12,7 +12,8 @@ import java.util.List;
  */
 @Data
 public class FeedbackEntryView {
-    private String id;
+    /** 条目编号（自然数自增，与契约 v1.0 'number 条目编号' 一致） */
+    private Long id;
     private String kind;
     private String title;
     private String content;

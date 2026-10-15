@@ -67,8 +67,8 @@ const STATUS_TABS: { id: StatusFilter; label: string }[] = [
   { id: 'REJECTED', label: '未采纳' },
 ];
 
-/** 条目 UUID → 短标识（列表整洁展示；完整 ID 见 title 提示） */
-const shortId = (id: string) => (id || '').slice(0, 8);
+/** 条目编号展示前缀（自增自然数，如 #1、#2） */
+const entryNo = (id: number | undefined) => (id == null ? '' : `#${id}`);
 
 /** 统一错误消息提取（apiFetch 抛 Error(message)；取不到时回退兜底文案） */
 const errMsg = (err: unknown, fallback: string) =>
@@ -213,7 +213,7 @@ const ReviewDialog: React.FC<{
           : action === 'REJECT'
             ? '已标记不予采纳'
             : '已退回待评估';
-      onDone(`${shortId(entry.id)} ${label}`);
+      onDone(`${entryNo(entry.id)} ${label}`);
     } catch (err) {
       setError(errMsg(err, '评估操作失败'));
     } finally {
@@ -227,7 +227,7 @@ const ReviewDialog: React.FC<{
         <div className="px-5 py-3.5 border-b border-slate-800">
           <h3 className="font-bold text-slate-100 text-sm flex items-center space-x-2">
             <ClipboardCheck className="w-4 h-4 text-cyan-400" />
-            <span>评估分析 #{shortId(entry.id)}</span>
+            <span>评估分析 {entryNo(entry.id)}</span>
           </h3>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
@@ -383,7 +383,7 @@ const EntryDialog: React.FC<{ onClose: () => void; onDone: (text: string) => voi
         content: content.trim(),
         priority,
       });
-      onDone(`已录入需求反馈（${shortId(created?.id || '')}）`);
+      onDone(`已录入需求反馈（${entryNo(created?.id)}）`);
     } catch (err) {
       setError(errMsg(err, '录入失败'));
     } finally {
@@ -550,13 +550,13 @@ export const M14RequirementFeedback: React.FC = () => {
   const [kindFilter, setKindFilter] = useState<'' | FeedbackKind>('');
   const [adminSearch, setAdminSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [reviewTarget, setReviewTarget] = useState<FeedbackEntry | null>(null);
   const [entryOpen, setEntryOpen] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   /** 展开基线条目时懒加载的完整进度（opsConfigured=null 尚未探测） */
   const [opsData, setOpsData] = useState<Record<string, OpsTrack>>({});
-  const [opsLoadingId, setOpsLoadingId] = useState<string | null>(null);
+  const [opsLoadingId, setOpsLoadingId] = useState<number | null>(null);
   const [opsLoadError, setOpsLoadError] = useState('');
   const [opsConfigured, setOpsConfigured] = useState<boolean | null>(null);
 
@@ -587,7 +587,7 @@ export const M14RequirementFeedback: React.FC = () => {
     setDeletingId(e.id);
     try {
       await requirementApi.remove(e.id);
-      showNotice('success', `${shortId(e.id)} 已删除`);
+      showNotice('success', `${entryNo(e.id)} 已删除`);
       void loadData();
     } catch (err) {
       showNotice('error', errMsg(err, '删除失败'));
@@ -597,7 +597,7 @@ export const M14RequirementFeedback: React.FC = () => {
   };
 
   // 展开基线条目时拉取智能运维处理进度（每次展开刷新取最新；未配置集成时不展示）
-  const loadOpsFor = useCallback(async (id: string) => {
+  const loadOpsFor = useCallback(async (id: number) => {
     setOpsLoadingId(id);
     setOpsLoadError('');
     try {
@@ -953,8 +953,8 @@ export const M14RequirementFeedback: React.FC = () => {
                           if (next !== null && e.status === 'BASELINED') void loadOpsFor(e.id);
                         }}
                       >
-                        <td className="px-5 py-3 font-mono text-slate-400" title={e.id}>
-                          #{shortId(e.id)}
+                        <td className="px-5 py-3 font-mono text-slate-400">
+                          {entryNo(e.id)}
                         </td>
                         <td className="px-4 py-3">{isKind(e.kind) ? KIND_LABELS[e.kind] : e.kind}</td>
                         <td className="px-4 py-3 max-w-[280px]">

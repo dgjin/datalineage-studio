@@ -654,7 +654,7 @@ export const webhookApi = {
 // Requirement feedback API (M14: collection -> baseline review -> AIOps standard export)
 export const requirementApi = {
   submit: (payload: { kind: string; title: string; content: string; priority?: string }) =>
-    apiFetch<{ id: string }>('/requirements', {
+    apiFetch<{ id: number }>('/requirements', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
@@ -662,7 +662,7 @@ export const requirementApi = {
   mine: () => apiFetch<FeedbackEntry[]>('/requirements/mine'),
 
   // AIOps processing progress proxy (hidden by the UI when the integration is unconfigured)
-  opsProgress: (ids: string[]) =>
+  opsProgress: (ids: number[]) =>
     apiFetch<OpsProgressResponse>(`/requirements/ops-progress?ids=${encodeURIComponent(ids.join(','))}`),
 
   adminList: (params?: { status?: string; kind?: string }) => {
@@ -683,15 +683,15 @@ export const requirementApi = {
     }>('/requirements/summary'),
 
   review: (
-    id: string,
+    id: number,
     payload: { action: string; priority?: string; baselineVersion?: string; assessment?: string }
   ) =>
-    apiFetch<{ id: string; status: string }>(`/requirements/${encodeURIComponent(id)}/review`, {
+    apiFetch<{ id: number; status: string }>(`/requirements/${encodeURIComponent(id)}/review`, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
-  remove: (id: string) =>
+  remove: (id: number) =>
     apiFetch<void>(`/requirements/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     }),

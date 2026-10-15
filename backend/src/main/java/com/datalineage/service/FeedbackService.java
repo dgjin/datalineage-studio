@@ -129,7 +129,7 @@ public class FeedbackService {
      * 归属隔离——非 ADMIN 仅能查询本人提交的条目（越权 ID 静默剔除，不泄露存在性）。
      */
     public Map<String, Object> opsProgress(String caller, boolean isAdmin, String idsParam) {
-        List<String> ids = parseIds(idsParam);
+        List<Long> ids = parseIds(idsParam);
         if (ids.isEmpty()) {
             throw new BusinessException("缺少 ids（逗号分隔的需求条目 ID 列表）");
         }
@@ -142,13 +142,13 @@ public class FeedbackService {
             response.put("ops", Map.of());
             return response;
         }
-        List<String> allowed = ids;
+        List<Long> allowed = ids;
         if (!isAdmin) {
             List<FeedbackEntryEntity> mine = entryMapper.selectList(new QueryWrapper<FeedbackEntryEntity>()
                     .select("id")
                     .eq("submitter", caller)
                     .in("id", ids));
-            Set<String> mineIds = mine.stream().map(FeedbackEntryEntity::getId).collect(Collectors.toSet());
+            Set<Long> mineIds = mine.stream().map(FeedbackEntryEntity::getId).collect(Collectors.toSet());
             allowed = ids.stream().filter(mineIds::contains).collect(Collectors.toList());
         }
         response.put("configured", true);
@@ -209,7 +209,7 @@ public class FeedbackService {
      * 每次评估（含继续评估）追加一条评估历史。
      */
     @Transactional
-    public Map<String, Object> review(String id, FeedbackReviewRequest request, String reviewer) {
+    public Map<String, Object> review(Long id, FeedbackReviewRequest request, String reviewer) {
         String action = upper(trim(request.getAction()));
         if (!VALID_REVIEW_ACTIONS.contains(action)) {
             throw new BusinessException("action 无效（BASELINE / REJECT / PENDING）");
@@ -279,7 +279,7 @@ public class FeedbackService {
 
     /** 删除条目（ADMIN；评估历史随外键级联删除，写操作经审计切面留痕）。 */
     @Transactional
-    public void delete(String id) {
+    public void delete(Long id) {
         FeedbackEntryEntity entry = entryMapper.selectById(id);
         if (entry == null) {
             throw new BusinessException("条目不存在");
@@ -352,12 +352,12 @@ public class FeedbackService {
         if (views.isEmpty()) {
             return;
         }
-        List<String> ids = views.stream().map(FeedbackEntryView::getId).collect(Collectors.toList());
+        List<Long> ids = views.stream().map(FeedbackEntryView::getId).collect(Collectors.toList());
         List<FeedbackEntryRevisionEntity> revisions = revisionMapper.selectList(
                 new QueryWrapper<FeedbackEntryRevisionEntity>()
                         .in("entry_id", ids)
                         .orderByAsc("id"));
-        Map<String, List<FeedbackRevisionView>> grouped = new LinkedHashMap<>();
+        Map<Long, List<FeedbackRevisionView>> grouped = new LinkedHashMap<>();
         for (FeedbackEntryRevisionEntity revision : revisions) {
             grouped.computeIfAbsent(revision.getEntryId(), key -> new ArrayList<>())
                     .add(FeedbackRevisionView.from(revision));
@@ -371,13 +371,24 @@ public class FeedbackService {
         }
     }
 
-    /** ids 解析：逗号分隔、去空白、保序去重（条目 ID 为 UUID 字符串）。 */
-    private List<String> parseIds(String raw) {
-        LinkedHashSet<String> ids = new LinkedHashSet<>();
+    /**
+     * ids 解析：逗号分隔的正整数（对齐源实现 Number.isInteger && n > 0 口径），
+     * 非法 token 静默忽略，保序去重。
+     */
+    private List<Long> parseIds(String raw) {
+        LinkedHashSet<Long> ids = new LinkedHashSet<>();
         for (String part : trim(raw).split(",")) {
             String value = part.trim();
-            if (!value.isEmpty()) {
-                ids.add(value);
+            if (value.isEmpty()) {
+                continue;
+            }
+            try {
+                long parsed = Long.parseLong(value);
+                if (parsed > 0) {
+                    ids.add(parsed);
+                }
+            } catch (NumberFormatException ignored) {
+                // 非数字 token 忽略（与源实现容错一致）
             }
         }
         return new ArrayList<>(ids);

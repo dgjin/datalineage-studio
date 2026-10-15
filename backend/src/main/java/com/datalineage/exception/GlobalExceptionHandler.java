@@ -8,6 +8,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.stream.Collectors;
 
@@ -30,6 +31,13 @@ public class GlobalExceptionHandler {
             .collect(Collectors.joining(", "));
         log.warn("Validation exception: {}", message);
         return ApiResponse.error(400, "Validation failed: " + message);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<Void> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+        log.warn("Path/request parameter type mismatch: {}", e.getMessage());
+        return ApiResponse.error(400, "参数类型无效（" + e.getName() + "）");
     }
 
     @ExceptionHandler(Exception.class)

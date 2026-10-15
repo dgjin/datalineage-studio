@@ -1,7 +1,7 @@
 /**
  * 需求收集与意见反馈：共享类型与文案（M14 模块「我的反馈 / 评估分析」共用）。
  * 移植自「智能问数据分析系统」的需求反馈功能；数据形态与后端 FeedbackEntryView 映射保持一致。
- * id 为 UUID 字符串（datalineage-studio 主键策略）；revisions 为评估历史（评估先后升序，
+ * id 为自然数自增编号（与源实现契约 id: 'number 条目编号' 一致）；revisions 为评估历史（评估先后升序，
  * 标准导出接口同样附带，供 AIOps 获取「继续评估」产生的新内容）。
  * 智能运维处理进度：OpsTrack/OpsTimelineEvent（经 /requirements/ops-progress 代理 AIOps）。
  */
@@ -15,7 +15,7 @@ export type FeedbackReviewAction = 'BASELINE' | 'REJECT' | 'PENDING';
 /** 单次评估历史记录（每次评估均留痕：「继续评估」的新内容经导出接口提供给 AIOps 同步） */
 export interface FeedbackRevision {
   id: number;
-  entryId: string;
+  entryId: number;
   action: FeedbackReviewAction;
   priority: string;
   baselineVersion: string;
@@ -25,7 +25,8 @@ export interface FeedbackRevision {
 }
 
 export interface FeedbackEntry {
-  id: string;
+  /** 条目编号（自增自然数，如 1、2、3…） */
+  id: number;
   kind: FeedbackKind;
   title: string;
   content: string;
